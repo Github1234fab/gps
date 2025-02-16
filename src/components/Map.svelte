@@ -8,6 +8,7 @@
   let isTracking = false;
   let positions = [];
   let totalDistance = 0;
+  let distanceDisplay = "0.00 km"; // Variable pour afficher la distance
 
   onMount(async () => {
     if (typeof window !== "undefined") {
@@ -38,13 +39,11 @@
 
   function togglePauseTracking() {
     if (isTracking) {
-      // Mettre en pause le suivi
       if (watchId) {
         navigator.geolocation.clearWatch(watchId);
         watchId = null;
       }
     } else {
-      // Reprendre le suivi
       startTracking();
     }
     isTracking = !isTracking;
@@ -61,7 +60,6 @@
 
   function onPositionReceived(position) {
     const { latitude, longitude } = position.coords;
-
     const latlng = [latitude, longitude];
     positions.push(latlng);
 
@@ -78,6 +76,7 @@
       const prevLatLng = positions[positions.length - 2];
       const distance = getDistanceFromLatLonInKm(prevLatLng[0], prevLatLng[1], latitude, longitude);
       totalDistance += distance;
+      distanceDisplay = totalDistance.toFixed(2) + " km"; // Mettre à jour l'affichage de la distance
     }
   }
 
@@ -113,11 +112,15 @@
     font-size: 16px;
     cursor: pointer;
   }
+  #distance {
+    font-size: 1.5em;
+    margin-top: 10px;
+  }
 </style>
 
 <div id="map"></div>
+<div id="distance">Distance parcourue : {distanceDisplay}</div>
 
 <button on:click={startTracking} disabled={isTracking}>Start</button>
-<button on:click={togglePauseTracking}>{isTracking ? 'Pause' : 'Resume'}</button>
-<button on:click={finishTracking} disabled={!positions.length}>Finish</button>
-
+<button on:click={togglePauseTracking}>{isTracking ? 'Pause' : 'Reprendre'}</button>
+<button on:click={finishTracking} disabled={!positions.length}>Stop</button>
