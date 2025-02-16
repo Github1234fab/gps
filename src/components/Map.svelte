@@ -1,92 +1,104 @@
 <script>
   import { onMount } from "svelte";
-  import { writable } from "svelte/store";
 
   let map;
-  let startMarker, endMarker, polyline;
-  let watchId; // ID pour arrêter la géolocalisation
+  let polyline;
+  let marker;
+  let watchId = null;
+  let isTracking = false;
   let positions = [];
-  let distance = writable(0);
-
-  // Fonction pour démarrer le suivi GPS
-  function startTracking() {
-    positions = []; // Reset du parcours
-    if (navigator.geolocation) {
-      watchId = navigator.geolocation.watchPosition(
-        (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          positions.push([lat, lng]);
-
-          // Ajouter un marqueur au début
-          if (positions.length === 1) {
-            if (startMarker) map.removeLayer(startMarker);
-            startMarker = L.marker([lat, lng]).addTo(map).bindPopup("Départ").openPopup();
-          }
-
-          // Mise à jour du tracé sur la carte
-          if (polyline) map.removeLayer(polyline);
-          polyline = L.polyline(positions, { color: "blue" }).addTo(map);
-
-          // Centrer la carte sur la position actuelle
-          map.setView([lat, lng], 15);
-        },
-        (err) => console.error("Erreur de géolocalisation:", err),
-        { enableHighAccuracy: true, maximumAge: 1000 }
-      );
-    } else {
-      alert("La géolocalisation n'est pas supportée sur ce navigateur.");
-    }
-  }
-
-  // Fonction pour arrêter et calculer la distance
-  function stopTracking() {
-    if (watchId) {
-      navigator.geolocation.clearWatch(watchId);
-      watchId = null;
-    }
-
-    if (positions.length > 1) {
-      const [startLat, startLng] = positions[0];
-      const [endLat, endLng] = positions[positions.length - 1];
-
-      // Ajouter un marqueur à l'arrivée
-      if (endMarker) map.removeLayer(endMarker);
-      endMarker = L.marker([endLat, endLng]).addTo(map).bindPopup("Arrivée").openPopup();
-
-      // Calcul de la distance en ligne droite
-      const R = 6371e3; // Rayon de la Terre en mètres
-      const φ1 = (startLat * Math.PI) / 180;
-      const φ2 = (endLat * Math.PI) / 180;
-      const Δφ = ((endLat - startLat) * Math.PI) / 180;
-      const Δλ = ((endLng - startLng) * Math.PI) / 180;
-
-      const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-                Math.cos(φ1) * Math.cos(φ2) *
-                Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-      const distanceMeters = R * c;
-      distance.set((distanceMeters / 1000).toFixed(2)); // Convertir en km
-    }
-  }
+  let totalDistance = 0;
 
   onMount(async () => {
     if (typeof window !== "undefined") {
       const L = await import("leaflet");
+      await import("leaflet/dist/leaflet.css");
 
       map = L.map("map").setView([48.8566, 2.3522], 13);
-
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "&copy; OpenStreetMap contributors",
         maxZoom: 18,
       }).addTo(map);
 
-      setTimeout(() => {
-        map.invalidateSize(); // Corrige les tuiles mal affichées
-      }, 500);
+      polyline = L.polyline([], { color: "blue" }).addTo(map);
     }
   });
+
+  async function startTracking() {
+    if (typeof window !== "undefined" && navigator.geolocation) {
+      isTracking = true;
+      watchId = navigator.geolocation.watchPosition(onPositionReceived, onError, {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+      });
+    } else {
+      alert("La géolocalisation n'est pas supportée par votre navigateur.");
+    }
+  }
+
+  function togglePauseTracking() {
+    if (isTracking) {
+      // Mettre en pause le suivi
+      if (watchId) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+      }
+    } else {
+      // Reprendre le suivi
+      startTracking();
+    }
+    isTracking = !isTracking;
+  }
+
+  function finishTracking() {
+    if (watchId) {
+      navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+    }
+    isTracking = false;
+    alert(`Distance totale parcourue : ${totalDistance.toFixed(2)} km`);
+  }
+
+  function onPositionReceived(position) {
+    const { latitude, longitude } = position.coords;
+
+    const latlng = [latitude, longitude];
+    positions.push(latlng);
+
+    if (marker) {
+      marker.setLatLng(latlng);
+    } else {
+      marker = L.marker(latlng).addTo(map);
+    }
+
+    polyline.addLatLng(latlng);
+    map.setView(latlng, 13);
+
+    if (positions.length > 1) {
+      const prevLatLng = positions[positions.length - 2];
+      const distance = getDistanceFromLatLonInKm(prevLatLng[0], prevLatLng[1], latitude, longitude);
+      totalDistance += distance;
+    }
+  }
+
+  function onError(error) {
+    console.error("Erreur de géolocalisation :", error);
+  }
+
+  function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Rayon de la Terre en km
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance en km
+  }
+
+  function deg2rad(deg) {
+    return deg * (Math.PI / 180);
+  }
 </script>
 
 <style>
@@ -95,14 +107,9 @@
     height: 400px;
     margin-bottom: 10px;
   }
-  .controls {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin-bottom: 10px;
-  }
   button {
-    padding: 10px;
+    margin: 5px;
+    padding: 10px 20px;
     font-size: 16px;
     cursor: pointer;
   }
@@ -110,9 +117,7 @@
 
 <div id="map"></div>
 
-<div class="controls">
-  <button on:click={startTracking}>Go</button>
-  <button on:click={stopTracking}>Arrivé</button>
-</div>
+<button on:click={startTracking} disabled={isTracking}>Start</button>
+<button on:click={togglePauseTracking}>{isTracking ? 'Pause' : 'Resume'}</button>
+<button on:click={finishTracking} disabled={!positions.length}>Finish</button>
 
-<p>Distance en ligne droite : {$distance} km</p>
