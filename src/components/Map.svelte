@@ -169,7 +169,7 @@
 <style>
 	#map {
 		width: 100%;
-		height: 400px;
+		height: 600px;
 		margin-bottom: 10px;
 	}
 	main {
@@ -217,6 +217,10 @@
 		width: 150px;
 		box-shadow: 0px 0px 10px #000000;
 	}
+  .buttons:active{
+    background-color: #275a28;
+    /* border: 1px solid rgb(221, 210, 210); */
+  }
 	.indicator {
 		width: 90%;
 		text-align: center;
@@ -236,10 +240,62 @@
 		align-self: flex-start;
 	}
 
+
+
+
+
 	@media screen and (max-width: 600px) {
-		.wrapper__buttons {
-			flex-direction: column;
+	
+    #map {
+		width: 100%;
+		height: 220px;
+	}
+  .wrapper__buttons {
+			flex-direction: row;
+      flex-wrap: wrap;
 			gap: 10px;
+      margin-top: 50px;
 		}
+    .wrapper__indicator{
+    margin-top: 20px;
+    gap: 5px;
+  }
+  .buttons {
+		background-color: #4caf50;
+		border: none;
+		color: white;
+		padding: 15px 25px;
+		text-align: center;
+		text-decoration: none;
+		display: inline-block;
+		font-size: 16px;
+		cursor: pointer;
+		border-radius: 15px;
+		width: 120px;
+		box-shadow: 0px 0px 10px #000000;
+	}
+ 
+  .buttons:active{
+    background-color: #275a28;
+    /* border: 1px solid rgb(221, 210, 210); */
+  }
+	.indicator {
+		width: 70%;
+		text-align: center;
+		align-self: flex-end;
+		border-radius: 15px;
+		padding: 10px;
+		margin: 0 auto;
+		background-color: #2b2828;
+		text-shadow: 0px 0px 1px #fdfdfd;
+		font-weight: bolder;
+		box-shadow: inset 0px 0px 5px 2px #000000;
+		font-size: 1.5rem;
+	}
+	.indicator span {
+		font-weight: 100;
+		font-size: 1rem;
+		align-self: flex-start;
+	}
 	}
 </style>

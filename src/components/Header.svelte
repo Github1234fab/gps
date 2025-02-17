@@ -13,8 +13,8 @@
         align-items: center;
         justify-content: space-between;
         background: linear-gradient(to top, blue, rgb(172, 189, 240));
-        padding: 20px;
-        height: 100%;
+        padding: 10px;
+        height: auto;
         
     }
     img{
