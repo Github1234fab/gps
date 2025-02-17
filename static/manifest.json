@@ -1,12 +1,12 @@
 {
     "id": "/",
-    "name": "Flèche",
-    "short_name": "Flèche",
+    "name": "Distance calculator",
+    "short_name": "Distance calculator",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#000000",
-    "description": "Application Flèche, notification d'évènements locaux",
+    "description": "Application de calcul de distance parcourue",
     "icons": [
             {
                     "src": "/ICON_192x192.png",
