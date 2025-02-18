@@ -1,5 +1,5 @@
 <script>
-	// import Map from '../components/Map.svelte';
+	import Map from '../components/Map.svelte';
 	import './style.css';
 
     let deferredPrompt;
@@ -57,4 +57,4 @@
         background-color: white;
     }
 </style>
-<!-- <Map /> -->
+<Map />
