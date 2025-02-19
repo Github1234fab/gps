@@ -8,15 +8,21 @@
 	let marker;
 	let watchId = null;
 	let isTracking = false;
-	let isCalculating = false; // Initialisé à false
+	let isCalculating = false;
 	let positions = [];
 	let totalDistance = 0;
-	let distanceDisplay = '0.000 km'; // Affichage de la distance avec trois décimales
-	let speedDisplay = '0.0 km/h'; // Affichage de la vitesse
+	let distanceDisplay = '0.000 km';
+	let speedDisplay = '0.0 km/h';
 	let lastPositionTime = null;
 	let showPopup = false;
 	let speedHistory = [];
-	const maxSpeedHistory = 5; // Nombre de valeurs à conserver pour le lissage
+	let mode = 'marche'; // Mode par défaut
+	const maxSpeedHistory = {
+		marche: 5,
+		courir: 4,
+		velo: 3,
+		voiture: 2
+	};
 
 	onMount(async () => {
 		if (typeof window !== 'undefined') {
@@ -75,7 +81,8 @@
 			isCalculating = true;
 			watchId = navigator.geolocation.watchPosition(onPositionReceived, onError, {
 				enableHighAccuracy: true,
-				maximumAge: 0
+				maximumAge: 0,
+				timeout: getTimeoutForMode()
 			});
 		} else {
 			alert("La géolocalisation n'est pas supportée par votre navigateur.");
@@ -142,7 +149,7 @@
 				const speed = (distance / timeDiff) * 3600; // en km/h
 				speedHistory.push(speed);
 
-				if (speedHistory.length > maxSpeedHistory) {
+				if (speedHistory.length > maxSpeedHistory[mode]) {
 					speedHistory.shift(); // Retirer la valeur la plus ancienne
 				}
 
@@ -177,6 +184,26 @@
 	function display() {
 		showPopup = false;
 	}
+
+	function getTimeoutForMode() {
+		switch (mode) {
+			case 'marche':
+				return 5000; // 5 secondes
+			case 'courir':
+				return 3000; // 3 secondes
+			case 'velo':
+				return 2000; // 2 secondes
+			case 'voiture':
+				return 1000; // 1 seconde
+			default:
+				return 5000;
+		}
+	}
+
+	function setMode(newMode) {
+		mode = newMode;
+		resetTracking(); // Réinitialiser le suivi lors du changement de mode
+	}
 </script>
 
 <main>
@@ -184,7 +211,7 @@
 	<div id="map"></div>
 
 	{#if showPopup}
-		<div class="pop-up__container" in:fade={{ duration: 6000 }} out:fade={{ duration: 2000 }}>
+		<div class="pop-up__container" in:fade={{ duration: 4000 }} out:fade={{ duration: 2000 }}>
 			<div class="pop-up">
 				<h2>Comment installer votre application ?</h2>
 				<p>
@@ -197,7 +224,7 @@
 					<img src="share2.png" alt="icone de l'application" width="25px" height="25px" />
           <br><br> Cliquez, attendez quelques secondes et le tour est joué !
           <br> Vous pouvez maintenant retrouver votre application sur votre écran d'accueil et commencer à l'utiliser.
-  
+
 				</p>
 				<button class="pop-up__erase-button" on:click={display}> x</button>
 			</div>
@@ -219,6 +246,24 @@
 		>
 		<button class="buttons" on:click={resetTracking}>Reset</button>
 		<button class="buttons" on:click={finishTracking} disabled={!positions.length}>Finish</button>
+	</div>
+	<div class="mode-selector">
+		<label>
+			<input type="radio" name="mode" value="marche" on:change={() => setMode('marche')} checked={mode === 'marche'} />
+			Marche
+		</label>
+		<label>
+			<input type="radio" name="mode" value="courir" on:change={() => setMode('courir')} checked={mode === 'courir'} />
+			Courir
+		</label>
+		<label>
+			<input type="radio" name="mode" value="velo" on:change={() => setMode('velo')} checked={mode === 'velo'} />
+			Vélo
+		</label>
+		<label>
+			<input type="radio" name="mode" value="voiture" on:change={() => setMode('voiture')} checked={mode === 'voiture'} />
+			Voiture
+		</label>
 	</div>
 </main>
 
@@ -260,7 +305,7 @@
 		transform: translate(-50%, -50%);
 		width: 90%;
 		height: auto;
-		background-color: rgb(255, 255, 255);
+		background-color: rgba(243, 243, 243, 0.745);
 		backdrop-filter: blur(10px);
 		-webkit-backdrop-filter: blur(10px);
 		border-radius: 20px;
@@ -292,11 +337,7 @@
     padding: 20px;
     line-height: 20px;
   }
-  img{
-    width: 20px;
-    height: 20px;
-  }
- 
+
 	.wrapper__indicator {
 		display: flex;
 		align-items: center;
@@ -354,6 +395,24 @@
 		font-weight: 100;
 		font-size: 1rem;
 		align-self: flex-start;
+	}
+
+	.mode-selector {
+		display: flex;
+		justify-content: center;
+		gap: 10px;
+		margin-top: 20px;
+	}
+
+	.mode-selector label {
+		padding: 10px;
+		background-color: #4caf50;
+		border-radius: 10px;
+		cursor: pointer;
+	}
+
+	.mode-selector input {
+		margin-right: 5px;
 	}
 
 	@media screen and (max-width: 600px) {
