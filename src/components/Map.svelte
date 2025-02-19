@@ -1,6 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import Header from '../components/Header.svelte';
+	import { fade } from 'svelte/transition';
 
 	let map;
 	let polyline;
@@ -13,9 +14,30 @@
 	let distanceDisplay = '0.000 km'; // Affichage de la distance avec trois décimales
 	let speedDisplay = '0.0 km/h'; // Affichage de la vitesse
 	let lastPositionTime = null;
+	let showPopup = false;
 
 	onMount(async () => {
 		if (typeof window !== 'undefined') {
+
+		// Vérifiez si l'application a déjà été installée
+		const isInstalled = localStorage.getItem('pwa-installed');
+		if (!isInstalled) {
+			showPopup = true;
+		}
+
+		// Écoutez l'événement appinstalled
+		window.addEventListener('appinstalled', () => {
+			hidePopup();
+		});
+
+
+	function hidePopup() {
+		showPopup = false;
+		// Marquer l'application comme installée
+		localStorage.setItem('pwa-installed', 'true');
+	}
+
+
 			const L = await import('leaflet');
 			await import('leaflet/dist/leaflet.css');
 
@@ -142,11 +164,36 @@
 	function deg2rad(deg) {
 		return deg * (Math.PI / 180);
 	}
+
+	function display() {
+		showPopup = false;
+	}
 </script>
 
 <main>
 	<Header />
 	<div id="map"></div>
+
+	{#if showPopup}
+		<div class="pop-up__container" in:fade={{ duration: 4000 }} out:fade={{ duration: 2000 }}>
+			<div class="pop-up">
+				<h2>Comment installer votre application ?</h2>
+				<p>
+					L'invitation d'installation de votre smartphone ne s'est pas déclenchée ?
+					<br /> Pas de panique, nous allons installer votre appli manuellement.
+					<br /><br> Cliquez sur les trois petis points 	<img src="menu-points.png" alt="icone de l'application" width="25px" height="25px" />, en haut à droite de votre page et
+					choisissez dans le menu déroulant, selon votre navigateur:
+					<br /> "Ouvrir l'application" ou "Application" ou encore "Ajouter à l'écran d'accueil".
+					<br />L'icone qui accompagne le texte doit ressembler à celui-ci:
+					<img src="share2.png" alt="icone de l'application" width="25px" height="25px" />
+          <br><br> Cliquez, attendez quelques secondes et le tour est joué !
+          <br> Vous pouvez maintenant retrouver votre application sur votre écran d'accueil et commencer à l'utiliser.
+  
+				</p>
+				<button class="pop-up__erase-button" on:click={display}> x</button>
+			</div>
+		</div>
+	{/if}
 	<div class="container__set-up">
 		<div class="wrapper__indicator">
 			<div class="indicator" id="distance">
@@ -171,9 +218,11 @@
 		width: 100%;
 		height: 600px;
 		margin-bottom: 10px;
+		z-index: 0;
 	}
 	main {
 		height: auto;
+		position: relative;
 	}
 	.container__set-up {
 		display: flex;
@@ -181,6 +230,60 @@
 		align-items: center;
 		justify-content: center;
 	}
+
+	.pop-up__container {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background-color: rgba(0, 0, 255, 0);
+		z-index: 2;
+	}
+
+	.pop-up {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		width: 90%;
+		height: auto;
+		background-color: rgba(243, 243, 243, 0.745);
+		backdrop-filter: blur(10px);
+		-webkit-backdrop-filter: blur(10px);
+		border-radius: 20px;
+		z-index: 2;
+	}
+	.pop-up__erase-button {
+		content: 'x';
+		position: absolute;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: white;
+		top: 0%;
+		left: 95%;
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		padding: 10px;
+		background-color: rgb(0, 0, 0);
+		z-index: 3;
+	}
+
+	.pop-up__erase-button:hover {
+		cursor: pointer;
+	}
+  .pop-up h2, p {
+    text-align: center;
+    color: rgb(13, 13, 13);
+    padding: 20px;
+    line-height: 20px;
+  }
+ 
 	.wrapper__indicator {
 		display: flex;
 		align-items: center;
@@ -217,10 +320,10 @@
 		width: 150px;
 		box-shadow: 0px 0px 10px #000000;
 	}
-  .buttons:active{
-    background-color: #275a28;
-    /* border: 1px solid rgb(221, 210, 210); */
-  }
+	.buttons:active {
+		background-color: #275a28;
+		/* border: 1px solid rgb(221, 210, 210); */
+	}
 	.indicator {
 		width: 90%;
 		text-align: center;
@@ -240,62 +343,57 @@
 		align-self: flex-start;
 	}
 
-
-
-
-
 	@media screen and (max-width: 600px) {
-	
-    #map {
-		width: 100%;
-		height: 220px;
-	}
-  .wrapper__buttons {
-			flex-direction: row;
-      flex-wrap: wrap;
-			gap: 10px;
-      margin-top: 50px;
+		#map {
+			width: 100%;
+			height: 220px;
 		}
-    .wrapper__indicator{
-    margin-top: 20px;
-    gap: 5px;
-  }
-  .buttons {
-		background-color: #4caf50;
-		border: none;
-		color: white;
-		padding: 15px 25px;
-		text-align: center;
-		text-decoration: none;
-		display: inline-block;
-		font-size: 16px;
-		cursor: pointer;
-		border-radius: 15px;
-		width: 120px;
-		box-shadow: 0px 0px 10px #000000;
-	}
- 
-  .buttons:active{
-    background-color: #275a28;
-    /* border: 1px solid rgb(221, 210, 210); */
-  }
-	.indicator {
-		width: 70%;
-		text-align: center;
-		align-self: flex-end;
-		border-radius: 15px;
-		padding: 10px;
-		margin: 0 auto;
-		background-color: #2b2828;
-		text-shadow: 0px 0px 1px #fdfdfd;
-		font-weight: bolder;
-		box-shadow: inset 0px 0px 5px 2px #000000;
-		font-size: 1.5rem;
-	}
-	.indicator span {
-		font-weight: 100;
-		font-size: 1rem;
-		align-self: flex-start;
-	}
+		.wrapper__buttons {
+			flex-direction: row;
+			flex-wrap: wrap;
+			gap: 10px;
+			margin-top: 50px;
+		}
+		.wrapper__indicator {
+			margin-top: 20px;
+			gap: 5px;
+		}
+		.buttons {
+			background-color: #4caf50;
+			border: none;
+			color: white;
+			padding: 15px 25px;
+			text-align: center;
+			text-decoration: none;
+			display: inline-block;
+			font-size: 16px;
+			cursor: pointer;
+			border-radius: 15px;
+			width: 120px;
+			box-shadow: 0px 0px 10px #000000;
+		}
+
+		.buttons:active {
+			background-color: #275a28;
+			/* border: 1px solid rgb(221, 210, 210); */
+		}
+		.indicator {
+			width: 70%;
+			text-align: center;
+			align-self: flex-end;
+			border-radius: 15px;
+			padding: 10px;
+			margin: 0 auto;
+			background-color: #2b2828;
+			text-shadow: 0px 0px 1px #fdfdfd;
+			font-weight: bolder;
+			box-shadow: inset 0px 0px 5px 2px #000000;
+			font-size: 1.5rem;
+		}
+		.indicator span {
+			font-weight: 100;
+			font-size: 1rem;
+			align-self: flex-start;
+		}
 	}
 </style>
