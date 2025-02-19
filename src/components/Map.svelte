@@ -15,6 +15,8 @@
 	let speedDisplay = '0.0 km/h'; // Affichage de la vitesse
 	let lastPositionTime = null;
 	let showPopup = false;
+	let speedHistory = [];
+	const maxSpeedHistory = 5; // Nombre de valeurs à conserver pour le lissage
 
 	onMount(async () => {
 		if (typeof window !== 'undefined') {
@@ -30,13 +32,11 @@
 			hidePopup();
 		});
 
-
 	function hidePopup() {
 		showPopup = false;
 		// Marquer l'application comme installée
 		localStorage.setItem('pwa-installed', 'true');
 	}
-
 
 			const L = await import('leaflet');
 			await import('leaflet/dist/leaflet.css');
@@ -104,6 +104,7 @@
 			marker.setLatLng([0, 0]); // Réinitialiser la position du marqueur
 		}
 		lastPositionTime = null;
+		speedHistory = []; // Réinitialiser l'historique des vitesses
 	}
 
 	function finishTracking() {
@@ -139,7 +140,15 @@
 			if (lastPositionTime) {
 				const timeDiff = (currentTime - lastPositionTime) / 1000; // en secondes
 				const speed = (distance / timeDiff) * 3600; // en km/h
-				speedDisplay = speed.toFixed(1) + ' km/h';
+				speedHistory.push(speed);
+
+				if (speedHistory.length > maxSpeedHistory) {
+					speedHistory.shift(); // Retirer la valeur la plus ancienne
+				}
+
+				// Calculer la moyenne des vitesses
+				const avgSpeed = speedHistory.reduce((sum, speed) => sum + speed, 0) / speedHistory.length;
+				speedDisplay = avgSpeed.toFixed(1) + ' km/h';
 			}
 
 			lastPositionTime = currentTime;
@@ -175,7 +184,7 @@
 	<div id="map"></div>
 
 	{#if showPopup}
-		<div class="pop-up__container" in:fade={{ duration: 4000 }} out:fade={{ duration: 2000 }}>
+		<div class="pop-up__container" in:fade={{ duration: 6000 }} out:fade={{ duration: 2000 }}>
 			<div class="pop-up">
 				<h2>Comment installer votre application ?</h2>
 				<p>
@@ -251,7 +260,7 @@
 		transform: translate(-50%, -50%);
 		width: 90%;
 		height: auto;
-		background-color: rgba(243, 243, 243, 0.745);
+		background-color: rgb(255, 255, 255);
 		backdrop-filter: blur(10px);
 		-webkit-backdrop-filter: blur(10px);
 		border-radius: 20px;
@@ -282,6 +291,10 @@
     color: rgb(13, 13, 13);
     padding: 20px;
     line-height: 20px;
+  }
+  img{
+    width: 20px;
+    height: 20px;
   }
  
 	.wrapper__indicator {
