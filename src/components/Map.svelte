@@ -1,270 +1,254 @@
 <script>
-	import { onMount } from 'svelte';
-	import Header from '../components/Header.svelte';
-	import { fade } from 'svelte/transition';
+  import { onMount, onDestroy } from 'svelte';
+  import InstallationChecker, { installationStatus } from '../components/InstallationChecker.svelte';
+  import Header from '../components/Header.svelte';
+  import { fade } from 'svelte/transition';
 
-	let map;
-	let polyline;
-	let marker;
-	let watchId = null;
-	let isTracking = false;
-	let isCalculating = false;
-	let positions = [];
-	let totalDistance = 0;
-	let distanceDisplay = '0.000 km';
-	let speedDisplay = '0.0 km/h';
-	let lastPositionTime = null;
-	let showPopup = false;
-	let speedHistory = [];
-	let mode = 'marche'; // Mode par défaut
-	const maxSpeedHistory = {
-		marche: 5,
-		courir: 4,
-		velo: 3,
-		voiture: 2
-	};
+  let map;
+  let polyline;
+  let marker;
+  let watchId = null;
+  let isTracking = false;
+  let isCalculating = false;
+  let positions = [];
+  let totalDistance = 0;
+  let distanceDisplay = '0.000 km';
+  let speedDisplay = '0.0 km/h';
+  let lastPositionTime = null;
+  let showPopup = false;
+  let speedHistory = [];
+  let mode = 'marche';
+  const maxSpeedHistory = {
+      marche: 5,
+      courir: 4,
+      velo: 3,
+      voiture: 2
+  };
 
-	onMount(async () => {
-		if (typeof window !== 'undefined') {
+  // Abonnez-vous au store pour réagir aux changements
+  const unsubscribe = installationStatus.subscribe(value => {
+      showPopup = !value;
+  });
 
-		// Vérifiez si l'application a déjà été installée
-		const isInstalled = localStorage.getItem('pwa-installed');
-		if (!isInstalled) {
-			showPopup = true;
-		}
+  onMount(async () => {
+      if (typeof window !== 'undefined') {
+          const L = await import('leaflet');
+          await import('leaflet/dist/leaflet.css');
 
-		// Écoutez l'événement appinstalled
-		window.addEventListener('appinstalled', () => {
-			hidePopup();
-		});
+          map = L.map('map').setView([48.8566, 2.3522], 13);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              attribution: '&copy; OpenStreetMap contributors',
+              maxZoom: 18
+          }).addTo(map);
 
-	function hidePopup() {
-		showPopup = false;
-		// Marquer l'application comme installée
-		localStorage.setItem('pwa-installed', 'true');
-	}
+          polyline = L.polyline([], { color: 'blue' }).addTo(map);
 
-			const L = await import('leaflet');
-			await import('leaflet/dist/leaflet.css');
+          const customIcon = L.icon({
+              iconUrl: '/pointer2.png',
+              iconSize: [25, 25],
+              iconAnchor: [12, 41],
+              popupAnchor: [1, -34],
+              shadowSize: [41, 41]
+          });
 
-			map = L.map('map').setView([48.8566, 2.3522], 13);
-			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-				attribution: '&copy; OpenStreetMap contributors',
-				maxZoom: 18
-			}).addTo(map);
+          if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition((position) => {
+                  const { latitude, longitude } = position.coords;
+                  const latlng = [latitude, longitude];
+                  marker = L.marker(latlng, { icon: customIcon }).addTo(map);
+                  map.setView(latlng, 13);
+              }, onError);
+          }
+      }
+  });
 
-			polyline = L.polyline([], { color: 'blue' }).addTo(map);
+  async function startTracking() {
+      if (typeof window !== 'undefined' && navigator.geolocation) {
+          isCalculating = true;
+          watchId = navigator.geolocation.watchPosition(onPositionReceived, onError, {
+              enableHighAccuracy: true,
+              maximumAge: 0,
+              timeout: getTimeoutForMode()
+          });
+      } else {
+          alert("La géolocalisation n'est pas supportée par votre navigateur.");
+      }
+  }
 
-			// Définir une icône personnalisée pour le marqueur
-			const customIcon = L.icon({
-				iconUrl: '/pointer2.png', // Remplacez par le chemin de votre icône
-				iconSize: [25, 25],
-				iconAnchor: [12, 41],
-				popupAnchor: [1, -34],
-				shadowSize: [41, 41]
-			});
+  function togglePauseTracking() {
+      if (isCalculating) {
+          if (watchId) {
+              navigator.geolocation.clearWatch(watchId);
+              watchId = null;
+          }
+      } else {
+          startTracking();
+      }
+      isCalculating = !isCalculating;
+  }
 
-			// Afficher la position de l'utilisateur sans démarrer le calcul
-			if (navigator.geolocation) {
-				navigator.geolocation.getCurrentPosition((position) => {
-					const { latitude, longitude } = position.coords;
-					const latlng = [latitude, longitude];
-					marker = L.marker(latlng, { icon: customIcon }).addTo(map);
-					map.setView(latlng, 13);
-				}, onError);
-			}
-		}
-	});
+  function resetTracking() {
+      positions = [];
+      totalDistance = 0;
+      distanceDisplay = '0.000 km';
+      speedDisplay = '0.0 km/h';
+      polyline.setLatLngs([]);
+      if (marker) {
+          marker.setLatLng([0, 0]);
+      }
+      lastPositionTime = null;
+      speedHistory = [];
+  }
 
-	async function startTracking() {
-		if (typeof window !== 'undefined' && navigator.geolocation) {
-			isCalculating = true;
-			watchId = navigator.geolocation.watchPosition(onPositionReceived, onError, {
-				enableHighAccuracy: true,
-				maximumAge: 0,
-				timeout: getTimeoutForMode()
-			});
-		} else {
-			alert("La géolocalisation n'est pas supportée par votre navigateur.");
-		}
-	}
+  function finishTracking() {
+      if (watchId) {
+          navigator.geolocation.clearWatch(watchId);
+          watchId = null;
+      }
+      isCalculating = false;
+      alert(`Distance totale parcourue : ${totalDistance.toFixed(3)} km`);
+  }
 
-	function togglePauseTracking() {
-		if (isCalculating) {
-			if (watchId) {
-				navigator.geolocation.clearWatch(watchId);
-				watchId = null;
-			}
-		} else {
-			startTracking();
-		}
-		isCalculating = !isCalculating;
-	}
+  function onPositionReceived(position) {
+      const { latitude, longitude } = position.coords;
+      const latlng = [latitude, longitude];
+      const currentTime = new Date().getTime();
+      positions.push(latlng);
 
-	function resetTracking() {
-		positions = [];
-		totalDistance = 0;
-		distanceDisplay = '0.000 km';
-		speedDisplay = '0.0 km/h';
-		polyline.setLatLngs([]);
-		if (marker) {
-			marker.setLatLng([0, 0]); // Réinitialiser la position du marqueur
-		}
-		lastPositionTime = null;
-		speedHistory = []; // Réinitialiser l'historique des vitesses
-	}
+      if (marker) {
+          marker.setLatLng(latlng);
+      } else {
+          marker = L.marker(latlng).addTo(map);
+      }
 
-	function finishTracking() {
-		if (watchId) {
-			navigator.geolocation.clearWatch(watchId);
-			watchId = null;
-		}
-		isCalculating = false;
-		alert(`Distance totale parcourue : ${totalDistance.toFixed(3)} km`);
-	}
+      polyline.addLatLng(latlng);
+      map.setView(latlng, 13);
 
-	function onPositionReceived(position) {
-		const { latitude, longitude } = position.coords;
-		const latlng = [latitude, longitude];
-		const currentTime = new Date().getTime();
-		positions.push(latlng);
+      if (positions.length > 1) {
+          const prevLatLng = positions[positions.length - 2];
+          const distance = getDistanceFromLatLonInKm(prevLatLng[0], prevLatLng[1], latitude, longitude);
+          totalDistance += distance;
+          distanceDisplay = totalDistance.toFixed(3) + ' km';
 
-		if (marker) {
-			marker.setLatLng(latlng);
-		} else {
-			marker = L.marker(latlng).addTo(map);
-		}
+          if (lastPositionTime) {
+              const timeDiff = (currentTime - lastPositionTime) / 1000;
+              const speed = (distance / timeDiff) * 3600;
+              speedHistory.push(speed);
 
-		polyline.addLatLng(latlng);
-		map.setView(latlng, 13);
+              if (speedHistory.length > maxSpeedHistory[mode]) {
+                  speedHistory.shift();
+              }
 
-		if (positions.length > 1) {
-			const prevLatLng = positions[positions.length - 2];
-			const distance = getDistanceFromLatLonInKm(prevLatLng[0], prevLatLng[1], latitude, longitude);
-			totalDistance += distance;
-			distanceDisplay = totalDistance.toFixed(3) + ' km'; // Mettre à jour l'affichage de la distance
+              const avgSpeed = speedHistory.reduce((sum, speed) => sum + speed, 0) / speedHistory.length;
+              speedDisplay = avgSpeed.toFixed(1) + ' km/h';
+          }
 
-			if (lastPositionTime) {
-				const timeDiff = (currentTime - lastPositionTime) / 1000; // en secondes
-				const speed = (distance / timeDiff) * 3600; // en km/h
-				speedHistory.push(speed);
+          lastPositionTime = currentTime;
+      }
+  }
 
-				if (speedHistory.length > maxSpeedHistory[mode]) {
-					speedHistory.shift(); // Retirer la valeur la plus ancienne
-				}
+  function onError(error) {
+      console.error('Erreur de géolocalisation :', error);
+  }
 
-				// Calculer la moyenne des vitesses
-				const avgSpeed = speedHistory.reduce((sum, speed) => sum + speed, 0) / speedHistory.length;
-				speedDisplay = avgSpeed.toFixed(1) + ' km/h';
-			}
+  function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = deg2rad(lat2 - lat1);
+      const dLon = deg2rad(lon2 - lon1);
+      const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+  }
 
-			lastPositionTime = currentTime;
-		}
-	}
+  function deg2rad(deg) {
+      return deg * (Math.PI / 180);
+  }
 
-	function onError(error) {
-		console.error('Erreur de géolocalisation :', error);
-	}
+  function getTimeoutForMode() {
+      switch (mode) {
+          case 'marche':
+              return 5000;
+          case 'courir':
+              return 3000;
+          case 'velo':
+              return 2000;
+          case 'voiture':
+              return 1000;
+          default:
+              return 5000;
+      }
+  }
 
-	function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-		const R = 6371; // Rayon de la Terre en km
-		const dLat = deg2rad(lat2 - lat1);
-		const dLon = deg2rad(lon2 - lon1);
-		const a =
-			Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-			Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-		const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-		return R * c; // Distance en km
-	}
+  function setMode(newMode) {
+      mode = newMode;
+      resetTracking();
+  }
 
-	function deg2rad(deg) {
-		return deg * (Math.PI / 180);
-	}
-
-	function display() {
-		showPopup = false;
-	}
-
-	function getTimeoutForMode() {
-		switch (mode) {
-			case 'marche':
-				return 5000; // 5 secondes
-			case 'courir':
-				return 3000; // 3 secondes
-			case 'velo':
-				return 2000; // 2 secondes
-			case 'voiture':
-				return 1000; // 1 seconde
-			default:
-				return 5000;
-		}
-	}
-
-	function setMode(newMode) {
-		mode = newMode;
-		resetTracking(); // Réinitialiser le suivi lors du changement de mode
-	}
+  onDestroy(() => {
+      unsubscribe();
+  });
 </script>
 
 <main>
-	<Header />
-	<div id="map"></div>
+  <Header />
+  <InstallationChecker {showPopup} />
+  <div id="map"></div>
 
-	{#if showPopup}
-		<div class="pop-up__container" in:fade={{ duration: 4000 }} out:fade={{ duration: 2000 }}>
-			<div class="pop-up">
-				<h2>Comment installer votre application ?</h2>
-				<p>
-					L'invitation d'installation de votre smartphone ne s'est pas déclenchée ?
-					<br /> Pas de panique, nous allons installer votre appli manuellement.
-					<br /><br> Cliquez sur les trois petis points 	<img src="menu-points.png" alt="icone de l'application" width="25px" height="25px" />, en haut à droite de votre page et
-					choisissez dans le menu déroulant, selon votre navigateur:
-					<br /> "Ouvrir l'application" ou "Application" ou encore "Ajouter à l'écran d'accueil".
-					<br />L'icone qui accompagne le texte doit ressembler à celui-ci:
-					<img src="share2.png" alt="icone de l'application" width="25px" height="25px" />
-          <br><br> Cliquez, attendez quelques secondes et le tour est joué !
-          <br> Vous pouvez maintenant retrouver votre application sur votre écran d'accueil et commencer à l'utiliser.
-
-				</p>
-				<button class="pop-up__erase-button" on:click={display}> x</button>
-			</div>
-		</div>
-	{/if}
-	<div class="container__set-up">
-		<div class="wrapper__indicator">
-			<div class="indicator" id="distance">
-				<span>Distance parcourue :</span> <br />
-				{distanceDisplay}
-			</div>
-			<div class="indicator" id="speed"><span>Vitesse actuelle : </span> <br />{speedDisplay}</div>
-		</div>
-	</div>
-	<div class="wrapper__buttons">
-		<button class="buttons" on:click={startTracking} disabled={isCalculating}>Start</button>
-		<button class="buttons" on:click={togglePauseTracking}
-			>{isCalculating ? 'Pause' : 'Reprendre'}</button
-		>
-		<button class="buttons" on:click={resetTracking}>Reset</button>
-		<button class="buttons" on:click={finishTracking} disabled={!positions.length}>Finish</button>
-	</div>
-	<div class="mode-selector">
-		<label>
-			<input type="radio" name="mode" value="marche" on:change={() => setMode('marche')} checked={mode === 'marche'} />
-			Marche
-		</label>
-		<label>
-			<input type="radio" name="mode" value="courir" on:change={() => setMode('courir')} checked={mode === 'courir'} />
-			Courir
-		</label>
-		<label>
-			<input type="radio" name="mode" value="velo" on:change={() => setMode('velo')} checked={mode === 'velo'} />
-			Vélo
-		</label>
-		<label>
-			<input type="radio" name="mode" value="voiture" on:change={() => setMode('voiture')} checked={mode === 'voiture'} />
-			Voiture
-		</label>
-	</div>
+  {#if showPopup}
+      <div class="pop-up__container" in:fade={{ duration: 4000 }} out:fade={{ duration: 2000 }}>
+          <div class="pop-up">
+              <h2>Comment installer votre application ?</h2>
+              <p>
+                  L'invitation d'installation de votre smartphone ne s'est pas déclenchée ?
+                  <br /> Pas de panique, nous allons installer votre appli manuellement.
+                  <br /><br> Cliquez sur les trois petis points
+                  <img src="menu-points.png" alt="icone de l'application" width="25px" height="25px" />, en haut à droite de votre page et
+                  choisissez dans le menu déroulant, selon votre navigateur:
+                  <br /> "Ouvrir l'application" ou "Application" ou encore "Ajouter à l'écran d'accueil".
+                  <br />L'icone qui accompagne le texte doit ressembler à celui-ci:
+                  <img src="share2.png" alt="icone de l'application" width="25px" height="25px" />
+                  <br><br> Cliquez, attendez quelques secondes et le tour est joué !
+                  <br> Vous pouvez maintenant retrouver votre application sur votre écran d'accueil et commencer à l'utiliser.
+              </p>
+              <button class="pop-up__erase-button" on:click={() => showPopup = false}> x</button>
+          </div>
+      </div>
+  {/if}
+  <div class="container__set-up">
+      <div class="wrapper__indicator">
+          <div class="indicator" id="distance">
+              <span>Distance parcourue :</span> <br />
+              {distanceDisplay}
+          </div>
+          <div class="indicator" id="speed"><span>Vitesse actuelle : </span> <br />{speedDisplay}</div>
+      </div>
+  </div>
+  <div class="wrapper__buttons">
+      <button class="buttons" on:click={startTracking} disabled={isCalculating}>Start</button>
+      <button class="buttons" on:click={togglePauseTracking}>{isCalculating ? 'Pause' : 'Reprendre'}</button>
+      <button class="buttons" on:click={resetTracking}>Reset</button>
+      <button class="buttons" on:click={finishTracking} disabled={!positions.length}>Finish</button>
+  </div>
+  <div class="mode-selector">
+      <label>
+          <input type="radio" name="mode" value="marche" on:change={() => setMode('marche')} checked={mode === 'marche'} />
+          Marche
+      </label>
+      <label>
+          <input type="radio" name="mode" value="courir" on:change={() => setMode('courir')} checked={mode === 'courir'} />
+          Courir
+      </label>
+      <label>
+          <input type="radio" name="mode" value="velo" on:change={() => setMode('velo')} checked={mode === 'velo'} />
+          Vélo
+      </label>
+      <label>
+          <input type="radio" name="mode" value="voiture" on:change={() => setMode('voiture')} checked={mode === 'voiture'} />
+          Voiture
+      </label>
+  </div>
 </main>
 
 <style>
@@ -305,7 +289,7 @@
 		transform: translate(-50%, -50%);
 		width: 90%;
 		height: auto;
-		background-color: rgba(243, 243, 243, 0.745);
+		background-color: rgb(255, 255, 255);
 		backdrop-filter: blur(10px);
 		-webkit-backdrop-filter: blur(10px);
 		border-radius: 20px;
@@ -337,7 +321,11 @@
     padding: 20px;
     line-height: 20px;
   }
-
+  img{
+    width: 20px;
+    height: 20px;
+  }
+ 
 	.wrapper__indicator {
 		display: flex;
 		align-items: center;
@@ -395,24 +383,6 @@
 		font-weight: 100;
 		font-size: 1rem;
 		align-self: flex-start;
-	}
-
-	.mode-selector {
-		display: flex;
-		justify-content: center;
-		gap: 10px;
-		margin-top: 20px;
-	}
-
-	.mode-selector label {
-		padding: 10px;
-		background-color: #4caf50;
-		border-radius: 10px;
-		cursor: pointer;
-	}
-
-	.mode-selector input {
-		margin-right: 5px;
 	}
 
 	@media screen and (max-width: 600px) {

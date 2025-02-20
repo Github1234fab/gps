@@ -1,4 +1,4 @@
-<script>
+<!-- <script>
 	import { onMount } from 'svelte';
 
 	let deferredPrompt = null;
@@ -40,7 +40,7 @@
 <div>
 	<!-- Autres éléments de votre application -->
 
-	{#if showInstallPopup}
+	<!-- {#if showInstallPopup}
 		<div class="popup">
 			<div class="popup-content">
 				<p>Installez notre application pour une meilleure expérience !</p>
@@ -92,4 +92,4 @@
 		background-color: #ccc;
 		margin-top: 10px;
 	}
-</style>
+</style> --> -->
