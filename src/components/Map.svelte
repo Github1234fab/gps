@@ -20,6 +20,7 @@
 	let deferredPrompt; // Allows to show the install prompt
 	let installButton = false;
 
+  // fonction pour installer l'application
 	function installApp() {
 		console.log(1);
 		if (deferredPrompt) {
@@ -37,6 +38,8 @@
 
 	onMount(async () => {
 		if (typeof window !== 'undefined') {
+
+      //écoute de l'événement beforeinstallprompt
 			window.addEventListener('beforeinstallprompt', (e) => {
 				console.log('beforeinstallprompt fired');
 				e.preventDefault(); // Empêche l'affichage automatique de la bannière
@@ -44,10 +47,12 @@
 				installButton = true; // Déclenche la réactivité dans Svelte
 			});
 
+      //écoute de l'événement appinstalled et génère une confirmation d'intallation
 			window.addEventListener('appinstalled', (evt) => {
+        installButton = false;
 				console.log('appinstalled fired', evt);
-				alert("L'application a été installée avec succès !");
-				installButton = false;
+				alert("L'application a été installée avec succès 👍 !  Vous pouvez désormais l'utiliser en tant qu'application et bénéficier de tout ces atouts. Retrouvez l'application sur votre écran d'accueil, elle vous attends 😉 .");
+			
 			});
 
 			// Vérifiez si l'application a déjà été installée
