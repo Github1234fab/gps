@@ -51,7 +51,7 @@
   window.addEventListener("appinstalled", evt => {
   console.log("appinstalled fired", evt);
   alert("L'application a été installée avec succès !");
-  showPopup = false;
+  installButton = false;
 });
 
 
