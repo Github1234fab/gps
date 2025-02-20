@@ -18,12 +18,10 @@
 	let speedHistory = [];
 	const maxSpeedHistory = 5; // Nombre de valeurs à conserver pour le lissage
 	let deferredPrompt; // Allows to show the install prompt
-	let installButton = false;
+	let installButton = true;
 
-
-
-  function installApp() {
-    console.log(1);
+	function installApp() {
+		console.log(1);
 		if (deferredPrompt) {
 			deferredPrompt.prompt(); // Affiche le prompt
 			deferredPrompt.userChoice.then((choiceResult) => {
@@ -37,25 +35,20 @@
 		}
 	}
 
-
 	onMount(async () => {
 		if (typeof window !== 'undefined') {
+			window.addEventListener('beforeinstallprompt', (e) => {
+				console.log('beforeinstallprompt fired');
+				e.preventDefault(); // Empêche l'affichage automatique de la bannière
+				deferredPrompt = e; // Stocke l'événement
+				installButton = true; // Déclenche la réactivité dans Svelte
+			});
 
-      window.addEventListener('beforeinstallprompt', (e) => {
-		console.log('beforeinstallprompt fired');
-		e.preventDefault(); // Empêche l'affichage automatique de la bannière
-		deferredPrompt = e; // Stocke l'événement
-		installButton = true; // Déclenche la réactivité dans Svelte
-	});
-
-  window.addEventListener("appinstalled", evt => {
-  console.log("appinstalled fired", evt);
-  alert("L'application a été installée avec succès !");
-  installButton = false;
-});
-
-
-	
+			window.addEventListener('appinstalled', (evt) => {
+				console.log('appinstalled fired', evt);
+				alert("L'application a été installée avec succès !");
+				installButton = false;
+			});
 
 			// Vérifiez si l'application a déjà été installée
 			const isInstalled = localStorage.getItem('pwa-installed');
@@ -217,32 +210,13 @@
 
 <main>
 	<Header />
-	<div id="map"></div>
 
 	{#if installButton}
-		<button on:click={installApp}>Install</button>
+		<button class="install-button" on:click={installApp}>Installer</button>
 	{/if}
 
-	<!-- {#if showPopup}
-		<div class="pop-up__container" in:fade={{ duration: 6000 }} out:fade={{ duration: 2000 }}>
-			<div class="pop-up">
-				<h2>Comment installer votre application ?</h2>
-				<p>
-					L'invitation d'installation de votre smartphone ne s'est pas déclenchée ?
-					<br /> Pas de panique, nous allons installer votre appli manuellement.
-					<br /><br> Cliquez sur les trois petis points 	<img src="menu-points.png" alt="icone de l'application" width="25px" height="25px" />, en haut à droite de votre page et
-					choisissez dans le menu déroulant, selon votre navigateur:
-					<br /> "Ouvrir l'application" ou "Application" ou encore "Ajouter à l'écran d'accueil".
-					<br />L'icone qui accompagne le texte doit ressembler à celui-ci:
-					<img src="share2.png" alt="icone de l'application" width="25px" height="25px" />
-          <br><br> Cliquez, attendez quelques secondes et le tour est joué !
-          <br> Vous pouvez maintenant retrouver votre application sur votre écran d'accueil et commencer à l'utiliser.
-  
-				</p>
-				<button class="pop-up__erase-button" on:click={display}> x</button>
-			</div>
-		</div>
-	{/if} -->
+	<div id="map"></div>
+
 	<div class="container__set-up">
 		<div class="wrapper__indicator">
 			<div class="indicator" id="distance">
@@ -271,7 +245,7 @@
 	}
 	main {
 		height: auto;
-		position: relative;
+		width: auto;
 	}
 	.container__set-up {
 		display: flex;
@@ -279,63 +253,6 @@
 		align-items: center;
 		justify-content: center;
 	}
-
-	/* .pop-up__container {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background-color: rgba(0, 0, 255, 0);
-		z-index: 2;
-	}
-
-	.pop-up {
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		width: 90%;
-		height: auto;
-		background-color: rgb(255, 255, 255);
-		backdrop-filter: blur(10px);
-		-webkit-backdrop-filter: blur(10px);
-		border-radius: 20px;
-		z-index: 2;
-	}
-	.pop-up__erase-button {
-		content: 'x';
-		position: absolute;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		color: white;
-		top: 0%;
-		left: 95%;
-		width: 10px;
-		height: 10px;
-		border-radius: 50%;
-		padding: 10px;
-		background-color: rgb(0, 0, 0);
-		z-index: 3;
-	}
-
-	.pop-up__erase-button:hover {
-		cursor: pointer;
-	}
-  .pop-up h2, p {
-    text-align: center;
-    color: rgb(13, 13, 13);
-    padding: 20px;
-    line-height: 20px;
-  }
-  img{
-    width: 20px;
-    height: 20px;
-  } */
 
 	.wrapper__indicator {
 		display: flex;
@@ -359,6 +276,24 @@
 		margin-top: 30px;
 		background-color: rgb(56, 55, 55);
 	}
+	.install-button {
+		color: rgb(220, 148, 13);
+		font-weight: 500;
+		background-color: #ffffff;
+		padding: 6px 20px;
+		border: none;
+		border-radius: 25px;
+    margin: 20px auto;
+	}
+	.install-button:active {
+		background-color: #191919;
+    color: white
+	}
+	.install-button:hover {
+		background-color: #191919;
+    color: white
+	}
+
 	.buttons {
 		background-color: #4caf50;
 		border: none;
