@@ -18,22 +18,12 @@
 	let speedHistory = [];
 	const maxSpeedHistory = 5; // Nombre de valeurs à conserver pour le lissage
 	let deferredPrompt; // Allows to show the install prompt
-	let installButton = false;
+	let installButton = true;
 
 
 
-	onMount(async () => {
-		if (typeof window !== 'undefined') {
-
-
-      window.addEventListener('beforeinstallprompt', (e) => {
-		console.log('beforeinstallprompt fired');
-		e.preventDefault(); // Empêche l'affichage automatique de la bannière
-		deferredPrompt = e; // Stocke l'événement
-		installButton = true; // Déclenche la réactivité dans Svelte
-	});
-
-	function installApp() {
+  function installApp() {
+    console.log(1);
 		if (deferredPrompt) {
 			deferredPrompt.prompt(); // Affiche le prompt
 			deferredPrompt.userChoice.then((choiceResult) => {
@@ -48,10 +38,17 @@
 	}
 
 
+	onMount(async () => {
+		if (typeof window !== 'undefined') {
 
+      window.addEventListener('beforeinstallprompt', (e) => {
+		console.log('beforeinstallprompt fired');
+		e.preventDefault(); // Empêche l'affichage automatique de la bannière
+		deferredPrompt = e; // Stocke l'événement
+		installButton = true; // Déclenche la réactivité dans Svelte
+	});
 
-
-
+	
 
 			// Vérifiez si l'application a déjà été installée
 			const isInstalled = localStorage.getItem('pwa-installed');
@@ -216,7 +213,7 @@
 	<div id="map"></div>
 
 	{#if installButton}
-		<button>Install</button>
+		<button on:click={installApp}>Install</button>
 	{/if}
 
 	<!-- {#if showPopup}
