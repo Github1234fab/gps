@@ -18,7 +18,7 @@
 	let speedHistory = [];
 	const maxSpeedHistory = 5; // Nombre de valeurs à conserver pour le lissage
 	let deferredPrompt; // Allows to show the install prompt
-	let installButton = true;
+	let installButton = false;
 
 
 
