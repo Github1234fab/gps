@@ -4,6 +4,7 @@
     "short_name": "Distance calculator",
     "start_url": "/",
     "display": "standalone",
+    "prefer_related_applications": false,
     "background_color": "#ffffff",
     "theme_color": "#000000",
     "description": "Application de calcul de distance parcourue",
