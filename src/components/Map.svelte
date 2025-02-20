@@ -234,7 +234,7 @@
 	<div class="wrapper__buttons">
 		<button class="buttons" on:click={startTracking} disabled={isCalculating}>Start</button>
 		<button class="buttons" on:click={togglePauseTracking}
-			>{isCalculating ? 'Contiue' : 'Pause'}</button
+			>{isCalculating ? 'Pause' : 'Continue'}</button
 		>
 		<button class="buttons" on:click={resetTracking}>Reset</button>
 		<button class="buttons" on:click={finishTracking} disabled={!positions.length}>Finish</button>
