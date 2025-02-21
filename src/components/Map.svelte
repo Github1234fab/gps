@@ -413,10 +413,10 @@
 			flex-direction: row;
 			flex-wrap: wrap;
 			gap: 10px;
-			margin-top: 50px;
+			margin-top: 25px;
 		}
 		.wrapper__indicator {
-			margin-top: 10px;
+			margin-top: 5px;
 			gap: 5px;
 		}
 		.buttons {
