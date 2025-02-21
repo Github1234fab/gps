@@ -5,43 +5,33 @@
     "start_url": "/",
     "display": "standalone",
     "prefer_related_applications": false,
-    "background_color": "#ffffff",
+    "background_color": "#ADCFEF",
     "theme_color": "#000000",
     "description": "Application de calcul de distance parcourue",
     "icons": [
             {
-                    "src": "/ICON_192x192.png",
+                    "src": "/DS-192x192.png",
                     "sizes": "192x192",
                     "type": "image/png"
             },
             {
-                    "src": "/ICON_512x512.png",
+                    "src": "/DS-516x516.png",
                     "sizes": "512x512",
                     "type": "image/png"
             }
     ],
     "screenshots": [
             {
-                    "src": "/screenShot.png",
+                    "src": "/DS-screenShot.png",
                     "sizes": "1240x613",
                     "type": "image/png",
                     "form_factor": "wide"
             },
             {
-                    "src": "/screenshotMobile.png",
+                    "src": "/DS-screenshotMobile.png",
                     "sizes": "1280x720",
                     "type": "image/png",
                     "form_factor": "wide"
-            },
-            {
-                    "src": "/screenShot.png",
-                    "sizes": "1240x613",
-                    "type": "image/png"
-            },
-            {
-                    "src": "/screenshotMobile.png",
-                    "sizes": "1280x720",
-                    "type": "image/png"
             }
     ]
 }

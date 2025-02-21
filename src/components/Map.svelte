@@ -72,6 +72,7 @@
 				);
 			});
 
+
 			// Vérifiez si l'application a déjà été installée
 			const isInstalled = localStorage.getItem('pwa-installed');
 			if (!isInstalled) {
@@ -83,11 +84,11 @@
 				hidePopup();
 			});
 
-			function hidePopup() {
-				showPopup = false;
-				// Marquer l'application comme installée
-				localStorage.setItem('pwa-installed', 'true');
-			}
+			// function hidePopup() {
+			// 	showPopup = false;
+			// 	// Marquer l'application comme installée
+			// 	localStorage.setItem('pwa-installed', 'true');
+			// }
 
 			const L = await import('leaflet');
 			await import('leaflet/dist/leaflet.css');
