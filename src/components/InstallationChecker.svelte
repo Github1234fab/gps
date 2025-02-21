@@ -1,4 +1,4 @@
-<script>
+<!-- <script>
     import { onMount } from 'svelte';
     import { writable } from 'svelte/store';
 
@@ -86,4 +86,4 @@
 
 <style>
     /* Ajoutez ici le style pour votre popup si nécessaire */
-</style>
+</style> -->

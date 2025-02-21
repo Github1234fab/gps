@@ -16,7 +16,7 @@
 	let lastPositionTime = null;
 	let showPopup = false;
 	let speedHistory = [];
-	const maxSpeedHistory = 5; // Nombre de valeurs à conserver pour le lissage
+	let maxSpeedHistory = 5; // Nombre de valeurs à conserver pour le lissage
 	let deferredPrompt; // Allows to show the install prompt
 	let installButton = false;
 
@@ -38,7 +38,6 @@
 
 	onMount(async () => {
 		if (typeof window !== 'undefined') {
-
 
 			//fonction pour vérifier si l'utilisateur est sur un appareil iOS
 			function isIOS() {
@@ -63,6 +62,7 @@
 				installButton = true; // Déclenche la réactivité dans Svelte
 			});
 
+
 			//écoute de l'événement appinstalled et génère une confirmation d'intallation
 			window.addEventListener('appinstalled', (evt) => {
 				installButton = false;
@@ -73,22 +73,19 @@
 			});
 
 
-			// Vérifiez si l'application a déjà été installée
-			const isInstalled = localStorage.getItem('pwa-installed');
-			if (!isInstalled) {
-				showPopup = true;
-			}
-
-			// Écoutez l'événement appinstalled
-			window.addEventListener('appinstalled', () => {
-				hidePopup();
-			});
-
-			// function hidePopup() {
-			// 	showPopup = false;
-			// 	// Marquer l'application comme installée
-			// 	localStorage.setItem('pwa-installed', 'true');
+			// // Vérifiez si l'application a déjà été installée
+			// const isInstalled = localStorage.getItem('pwa-installed');
+			// if (!isInstalled) {
+			// 	showPopup = true;
 			// }
+
+
+			// // Écoutez l'événement appinstalled
+			// window.addEventListener('appinstalled', () => {
+			// 	hidePopup();
+			// });
+
+			
 
 			const L = await import('leaflet');
 			await import('leaflet/dist/leaflet.css');
@@ -229,6 +226,14 @@
 	function display() {
 		showPopup = false;
 	}
+
+
+  function updateMaxSpeedHistory(newValue) {
+    maxSpeedHistory = newValue;
+    // Vous pouvez également réinitialiser l'historique des vitesses ici si nécessaire
+    speedHistory = [];
+    console.log('maxSpeedHistory:', maxSpeedHistory);
+}
 </script>
 
 <main>
@@ -249,6 +254,15 @@
 			<div class="indicator" id="speed"><span>Vitesse actuelle : </span> <br />{speedDisplay}</div>
 		</div>
 	</div>
+<div class="wrapper__buttons-modes">
+  <button class="button-modes" on:click={() => updateMaxSpeedHistory(10)}><img class="img-modes" src="/walk.png" alt="icone d'un marcheur"></button>
+  <button class="button-modes" on:click={() => updateMaxSpeedHistory(5)}><img class="img-modes" src="/running.png" alt="icone d'un coureur"></button>
+  <button class="button-modes" on:click={() => updateMaxSpeedHistory(7)}><img class="img-modes" src="/car.png" alt="icone d'un vélo"></button>
+  <button class="button-modes" on:click={() => updateMaxSpeedHistory(3)}><img class="img-modes" src="/bike.png" alt="icone d'une voiture"></button>
+  <button class="button-modes" on:click={() => updateMaxSpeedHistory(3)}><img class="img-modes" src="/train.png" alt="icone d'un train"></button>
+  <button class="button-modes" on:click={() => updateMaxSpeedHistory(1)}><img class="img-modes" src="/plane.png" alt="icone d'un avion"></button>
+</div>
+
 	<div class="wrapper__buttons">
 		<button class="buttons" on:click={startTracking} disabled={isCalculating}>Start</button>
 		<button class="buttons" on:click={togglePauseTracking}
@@ -296,9 +310,32 @@
 		gap: 10px;
 		height: 100%;
 		width: 100%;
-		margin-top: 30px;
+		margin-top: 40px;
 		background-color: rgb(56, 55, 55);
 	}
+  .wrapper__buttons-modes {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    height: 100%;
+    width: 100%;
+    margin-top: 30px;
+  
+  }
+  .button-modes{
+    background-color: #8796e124;
+    border: none;
+    cursor: pointer;
+    width: 50px;
+    height: 50px;
+    box-shadow: 0px 0px 10px #000000;
+  }
+  .img-modes{
+    width: 30px;
+    height: 30px;
+  }
 	.install-button {
 		color: rgb(220, 148, 13);
 		font-weight: 500;
