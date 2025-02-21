@@ -20,7 +20,7 @@
 	let deferredPrompt; // Allows to show the install prompt
 	let installButton = false;
 
-  // fonction pour installer l'application
+	// fonction pour installer l'application
 	function installApp() {
 		console.log(1);
 		if (deferredPrompt) {
@@ -39,7 +39,23 @@
 	onMount(async () => {
 		if (typeof window !== 'undefined') {
 
-      //écoute de l'événement beforeinstallprompt
+
+			//fonction pour vérifier si l'utilisateur est sur un appareil iOS
+			function isIOS() {
+				return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+			}
+
+			if (isIOS()) {
+				console.log("L'utilisateur est sur un appareil iOS.");
+				alert(
+          "Pour installer l'application sur votre appareil iOS, appuyez sur le bouton de partage en bas de l'écran, puis sur 'Ajouter à l'écran d'accueil'."
+        );
+			} else {
+				console.log("L'utilisateur n'est pas sur un appareil iOS.");
+			}
+
+
+			//écoute de l'événement beforeinstallprompt
 			window.addEventListener('beforeinstallprompt', (e) => {
 				console.log('beforeinstallprompt fired');
 				e.preventDefault(); // Empêche l'affichage automatique de la bannière
@@ -47,12 +63,13 @@
 				installButton = true; // Déclenche la réactivité dans Svelte
 			});
 
-      //écoute de l'événement appinstalled et génère une confirmation d'intallation
+			//écoute de l'événement appinstalled et génère une confirmation d'intallation
 			window.addEventListener('appinstalled', (evt) => {
-        installButton = false;
+				installButton = false;
 				console.log('appinstalled fired', evt);
-				alert("L'application a été installée avec succès 👍 !  Vous pouvez désormais l'utiliser en tant qu'application et bénéficier de tout ces atouts. Retrouvez l'application sur votre écran d'accueil, elle vous attends 😉 .");
-			
+				alert(
+					"L'application a été installée avec succès 👍 !  Vous pouvez désormais l'utiliser en tant qu'application et bénéficier de tout ces atouts. Retrouvez l'application sur votre écran d'accueil, elle vous attends 😉 ."
+				);
 			});
 
 			// Vérifiez si l'application a déjà été installée
@@ -288,15 +305,15 @@
 		padding: 6px 20px;
 		border: none;
 		border-radius: 25px;
-    margin: 20px auto;
+		margin: 20px auto;
 	}
 	.install-button:active {
 		background-color: #191919;
-    color: white
+		color: white;
 	}
 	.install-button:hover {
 		background-color: #191919;
-    color: white
+		color: white;
 	}
 
 	.buttons {
