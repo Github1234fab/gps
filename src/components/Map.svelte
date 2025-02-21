@@ -48,7 +48,7 @@
 			if (isIOS()) {
 				console.log("L'utilisateur est sur un appareil iOS.");
 				alert(
-          "Pour installer l'application sur votre appareil iOS, appuyez sur le bouton de partage en bas de l'écran, puis sur 'Ajouter à l'écran d'accueil'."
+          "Pour installer l'application sur votre appareil iOS: \n 1. appuyez sur le bouton de partage en bas de l'écran. \n 2. Puis sur 'Ajouter à l'écran d'accueil'. \n 3. Retrouvez ensuite votre application sur votre écran d'accueil. \n Bonne utilisation 😉!"
         );
 			} else {
 				console.log("L'utilisateur n'est pas sur un appareil iOS.");
