@@ -46,7 +46,7 @@
 			if (isIOS()) {
 				console.log("L'utilisateur est sur un appareil iOS.");
 				alert(
-					"Pour installer votre application sur votre appareil iOS: \n 1. Appuyez sur le bouton de partage en bas de l'écran. \n 2. Ensuite, sélectionnez 'Ajouter à l'écran d'accueil'. \n 3. C'est fait 🎉 ! . \n Retrouvez votre application sur votre page d'accueil et commencez à l'utiliser 😉!"
+					"Pour installer votre application sur votre appareil iOS: \n 1. Appuyez sur le bouton 'Partager' au bas de votre écran (carré avec une flèche vers le haut). \n 2. Sélectionnez ensuite 'Ajouter à l'écran d'accueil'. \n 3. Retrouvez votre application sur votre page d'accueil et commencez à l'utiliser 😉!"
 				);
 			} else {
 				console.log("L'utilisateur n'est pas sur un appareil iOS.");
@@ -68,17 +68,6 @@
 					"L'application a été installée avec succès 👍 !  Vous pouvez désormais l'utiliser en tant qu'application et bénéficier de tout ces atouts. Retrouvez l'application sur votre écran d'accueil, elle vous attends 😉 ."
 				);
 			});
-
-			// // Vérifiez si l'application a déjà été installée
-			// const isInstalled = localStorage.getItem('pwa-installed');
-			// if (!isInstalled) {
-			// 	showPopup = true;
-			// }
-
-			// // Écoutez l'événement appinstalled
-			// window.addEventListener('appinstalled', () => {
-			// 	hidePopup();
-			// });
 
 			const L = await import('leaflet');
 			await import('leaflet/dist/leaflet.css');
@@ -115,6 +104,7 @@
 	async function startTracking() {
 		if (typeof window !== 'undefined' && navigator.geolocation) {
 			isCalculating = true;
+			isCalculating = !isCalculating;
 			watchId = navigator.geolocation.watchPosition(onPositionReceived, onError, {
 				enableHighAccuracy: true,
 				maximumAge: 0
@@ -126,13 +116,16 @@
 
 	function togglePauseTracking() {
 		if (isCalculating) {
+			// Si le suivi est en cours, le mettre en pause
 			if (watchId) {
 				navigator.geolocation.clearWatch(watchId);
 				watchId = null;
 			}
 		} else {
+			// Si le suivi est en pause, le reprendre
 			startTracking();
 		}
+		// Inverser l'état de isCalculating
 		isCalculating = !isCalculating;
 	}
 
@@ -246,6 +239,7 @@
 			<div class="indicator" id="speed"><span>Vitesse actuelle : </span> <br />{speedDisplay}</div>
 		</div>
 	</div>
+  <div class="container__wrapper__buttons-modes">
 	<div class="wrapper__buttons-modes">
 		<button class="button-modes" on:click={() => updateMaxSpeedHistory(10)}
 			><img class="img-modes" src="/walk.png" alt="icone d'un marcheur" /></button
@@ -257,7 +251,6 @@
 			><img class="img-modes" src="/car.png" alt="icone d'un vélo" /></button
 		>
 	</div>
-
 	<div class="wrapper__buttons-modes-B">
 		<button class="button-modes" on:click={() => updateMaxSpeedHistory(3)}
 			><img class="img-modes" src="/bike.png" alt="icone d'une voiture" /></button
@@ -269,10 +262,11 @@
 			><img class="img-modes" src="/plane.png" alt="icone d'un avion" /></button
 		>
 	</div>
+</div>
 	<div class="wrapper__buttons">
 		<button class="buttons" on:click={startTracking} disabled={isCalculating}>Start</button>
 		<button class="buttons" on:click={togglePauseTracking}
-			>{isCalculating ? 'Pause' : 'Continue'}</button
+			>{isCalculating ? 'Continue' : 'Pause'}</button
 		>
 		<button class="buttons" on:click={resetTracking}>Reset</button>
 		<button class="buttons" on:click={finishTracking} disabled={!positions.length}>Finish</button>
@@ -282,7 +276,7 @@
 <style>
 	#map {
 		width: 100%;
-		height: 600px;
+		height: 650px;
 		margin-bottom: 10px;
 		z-index: 0;
 	}
@@ -303,8 +297,8 @@
 		flex-direction: column;
 		justify-content: space-around;
 		width: 100%;
-		gap: 10px;
-		margin-top: 30px;
+		gap: 5px;
+		margin-top: 10px;
 		background-color: rgb(56, 55, 55);
 		color: white;
 	}
@@ -319,32 +313,39 @@
 		margin-top: 40px;
 		background-color: rgb(56, 55, 55);
 	}
-	.wrapper__buttons-modes, .wrapper__buttons-modes-B {
+  .container__wrapper__buttons-modes {
+    display: flex;
+    flex-direction: column;
+    margin-top: 25px;
+    gap: 12px;
+  }
+	.wrapper__buttons-modes,
+	.wrapper__buttons-modes-B {
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		flex-wrap: wrap;
-		gap: 30px;
+		gap: 15px;
 		height: 100%;
 		width: 100%;
-		margin-top: 30px;
+
 	}
-  
+
 	.button-modes {
-		background-color: #8796e1b0;
+		background-color: #8796e126;
 		border: none;
 		cursor: pointer;
 		width: 50px;
 		height: 50px;
-		box-shadow: 0px 0px 10px #000000;
-    border-radius: 8px;
+		border-radius: 50%;
+		box-shadow: 0px 0px 10px #7879d7;
 	}
-  .button-modes:active {
-    background-color: #8796e1;
-  }
-  .button-modes:hover {
-    background-color: #8796e1;
-  }
+	.button-modes:active {
+		background-color: #8796e1;
+	}
+	.button-modes:hover {
+		background-color: #8796e1;
+	}
 	.img-modes {
 		width: 30px;
 		height: 30px;
@@ -370,27 +371,26 @@
 	.buttons {
 		background-color: #4caf50;
 		border: none;
-		color: white;
-		padding: 15px 25px;
+		color: rgb(255, 255, 255);
+		padding: 10px 25px;
 		text-align: center;
 		text-decoration: none;
 		display: inline-block;
 		font-size: 16px;
 		cursor: pointer;
 		border-radius: 15px;
-		width: 150px;
+		width: 110px;
 		box-shadow: 0px 0px 10px #000000;
 	}
 	.buttons:active {
 		background-color: #275a28;
-		/* border: 1px solid rgb(221, 210, 210); */
 	}
 	.indicator {
 		width: 90%;
 		text-align: center;
 		align-self: flex-end;
 		border-radius: 15px;
-		padding: 20px;
+		padding: 15px;
 		margin: 0 auto;
 		background-color: #2b2828;
 		text-shadow: 0px 0px 1px #fdfdfd;
@@ -407,7 +407,7 @@
 	@media screen and (max-width: 600px) {
 		#map {
 			width: 100%;
-			height: 220px;
+			height: 240px;
 		}
 		.wrapper__buttons {
 			flex-direction: row;
@@ -416,14 +416,14 @@
 			margin-top: 50px;
 		}
 		.wrapper__indicator {
-			margin-top: 20px;
+			margin-top: 10px;
 			gap: 5px;
 		}
 		.buttons {
 			background-color: #4caf50;
 			border: none;
 			color: white;
-			padding: 15px 25px;
+			padding: 10px 25px;
 			text-align: center;
 			text-decoration: none;
 			display: inline-block;
@@ -443,7 +443,7 @@
 			text-align: center;
 			align-self: flex-end;
 			border-radius: 15px;
-			padding: 10px;
+			padding: 8px 10px;
 			margin: 0 auto;
 			background-color: #2b2828;
 			text-shadow: 0px 0px 1px #fdfdfd;
