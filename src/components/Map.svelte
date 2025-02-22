@@ -8,62 +8,53 @@
 	let marker;
 	let watchId = null;
 	let isTracking = false;
-	let isCalculating = false; // Initialisé à false
+	let isCalculating = false;
 	let positions = [];
 	let totalDistance = 0;
-	let distanceDisplay = '0.000 km'; // Affichage de la distance avec trois décimales
-	let speedDisplay = '0.0 km/h'; // Affichage de la vitesse
+	let distanceDisplay = '0.000 km';
+	let speedDisplay = '0.0 km/h';
 	let lastPositionTime = null;
 	let showPopup = false;
 	let speedHistory = [];
-	let maxSpeedHistory = 5; // Nombre de valeurs à conserver pour le lissage
-	let deferredPrompt; // Allows to show the install prompt
+	let maxSpeedHistory = 5;
+	let deferredPrompt;
 	let installButton = false;
+	let isUserInteracting = false;
 
-	// fonction pour installer l'application
 	function installApp() {
-		console.log(1);
 		if (deferredPrompt) {
-			deferredPrompt.prompt(); // Affiche le prompt
+			deferredPrompt.prompt();
 			deferredPrompt.userChoice.then((choiceResult) => {
 				if (choiceResult.outcome === 'accepted') {
 					console.log('User accepted the install prompt');
 				} else {
 					console.log('User dismissed the install prompt');
 				}
-				deferredPrompt = null; // Nettoie l'événement après usage
+				deferredPrompt = null;
 			});
 		}
 	}
 
 	onMount(async () => {
 		if (typeof window !== 'undefined') {
-			//fonction pour vérifier si l'utilisateur est sur un appareil iOS
 			function isIOS() {
 				return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 			}
 
 			if (isIOS()) {
-				console.log("L'utilisateur est sur un appareil iOS.");
 				alert(
 					"Pour installer votre application sur votre appareil iOS: \n 1. Appuyez sur le bouton 'Partager' au bas de votre écran (carré avec une flèche vers le haut). \n 2. Sélectionnez ensuite 'Ajouter à l'écran d'accueil'. \n 3. Retrouvez votre application sur votre page d'accueil et commencez à l'utiliser 😉!"
 				);
-			} else {
-				console.log("L'utilisateur n'est pas sur un appareil iOS.");
 			}
 
-			//écoute de l'événement beforeinstallprompt
 			window.addEventListener('beforeinstallprompt', (e) => {
-				console.log('beforeinstallprompt fired');
-				e.preventDefault(); // Empêche l'affichage automatique de la bannière
-				deferredPrompt = e; // Stocke l'événement
-				installButton = true; // Déclenche la réactivité dans Svelte
+				e.preventDefault();
+				deferredPrompt = e;
+				installButton = true;
 			});
 
-			//écoute de l'événement appinstalled et génère une confirmation d'intallation
 			window.addEventListener('appinstalled', (evt) => {
 				installButton = false;
-				console.log('appinstalled fired', evt);
 				alert(
 					"L'application a été installée avec succès 👍 !  Vous pouvez désormais l'utiliser en tant qu'application et bénéficier de tout ces atouts. Retrouvez l'application sur votre écran d'accueil, elle vous attends 😉 ."
 				);
@@ -80,16 +71,14 @@
 
 			polyline = L.polyline([], { color: 'blue' }).addTo(map);
 
-			// Définir une icône personnalisée pour le marqueur
 			const customIcon = L.icon({
-				iconUrl: '/pointer2.png', // Remplacez par le chemin de votre icône
+				iconUrl: '/pointer.png',
 				iconSize: [25, 25],
 				iconAnchor: [12, 41],
 				popupAnchor: [1, -34],
 				shadowSize: [41, 41]
 			});
 
-			// Afficher la position de l'utilisateur sans démarrer le calcul
 			if (navigator.geolocation) {
 				navigator.geolocation.getCurrentPosition((position) => {
 					const { latitude, longitude } = position.coords;
@@ -98,13 +87,21 @@
 					map.setView(latlng, 13);
 				}, onError);
 			}
+
+			// Ajouter des écouteurs pour détecter les interactions utilisateur
+			map.on('zoomstart dragstart', () => {
+				isUserInteracting = true;
+			});
+
+			map.on('zoomend dragend', () => {
+				isUserInteracting = false;
+			});
 		}
 	});
 
 	async function startTracking() {
 		if (typeof window !== 'undefined' && navigator.geolocation) {
 			isCalculating = true;
-			isCalculating = !isCalculating;
 			watchId = navigator.geolocation.watchPosition(onPositionReceived, onError, {
 				enableHighAccuracy: true,
 				maximumAge: 0
@@ -116,16 +113,13 @@
 
 	function togglePauseTracking() {
 		if (isCalculating) {
-			// Si le suivi est en cours, le mettre en pause
 			if (watchId) {
 				navigator.geolocation.clearWatch(watchId);
 				watchId = null;
 			}
 		} else {
-			// Si le suivi est en pause, le reprendre
 			startTracking();
 		}
-		// Inverser l'état de isCalculating
 		isCalculating = !isCalculating;
 	}
 
@@ -136,10 +130,10 @@
 		speedDisplay = '0.0 km/h';
 		polyline.setLatLngs([]);
 		if (marker) {
-			marker.setLatLng([0, 0]); // Réinitialiser la position du marqueur
+			marker.setLatLng([0, 0]);
 		}
 		lastPositionTime = null;
-		speedHistory = []; // Réinitialiser l'historique des vitesses
+		speedHistory = [];
 	}
 
 	function finishTracking() {
@@ -152,83 +146,77 @@
 	}
 
 	function onPositionReceived(position) {
-    const { latitude, longitude, accuracy } = position.coords;
-    const currentTime = new Date().getTime();
-    const latlng = [latitude, longitude];
+		const { latitude, longitude, accuracy } = position.coords;
+		const currentTime = new Date().getTime();
+		const latlng = [latitude, longitude];
 
-    // Éviter les positions trop imprécises (> 20m)
-    if (accuracy > 20) return;
+		if (accuracy > 20) return;
 
-    // Vérifier le mouvement réel
-    if (positions.length > 0) {
-        const prevLatLng = positions[positions.length - 1];
-        const distance = getDistanceFromLatLonInKm(prevLatLng[0], prevLatLng[1], latitude, longitude);
+		if (positions.length > 0) {
+			const prevLatLng = positions[positions.length - 1];
+			const distance = getDistanceFromLatLonInKm(prevLatLng[0], prevLatLng[1], latitude, longitude);
+			const movementThreshold = isRunning ? 3 : isWalking ? 5 : 1;
+			if (distance < movementThreshold) return;
+		}
 
-        // Seuil de validation du mouvement selon l'activité
-        const movementThreshold = isRunning ? 3 : isWalking ? 5 : 1; // ajustable
-        if (distance < movementThreshold) return;
-    }
+		positions.push(latlng);
 
-    positions.push(latlng);
+		if (positions.length > 5) {
+			positions.shift();
+		}
 
-    // Calcul de la moyenne des 5 dernières positions pour lisser
-    if (positions.length > 5) {
-        positions.shift(); // Retirer l'ancienne valeur
-    }
+		const avgLat = positions.reduce((sum, p) => sum + p[0], 0) / positions.length;
+		const avgLng = positions.reduce((sum, p) => sum + p[1], 0) / positions.length;
+		const smoothedLatLng = [avgLat, avgLng];
 
-    const avgLat = positions.reduce((sum, p) => sum + p[0], 0) / positions.length;
-    const avgLng = positions.reduce((sum, p) => sum + p[1], 0) / positions.length;
-    const smoothedLatLng = [avgLat, avgLng];
+		if (marker) {
+			marker.setLatLng(smoothedLatLng);
+		} else {
+			marker = L.marker(smoothedLatLng).addTo(map);
+		}
 
-    // Mise à jour du marqueur et de la carte
-    if (marker) {
-        marker.setLatLng(smoothedLatLng);
-    } else {
-        marker = L.marker(smoothedLatLng).addTo(map);
-    }
+		polyline.addLatLng(smoothedLatLng);
 
-    polyline.addLatLng(smoothedLatLng);
-    map.setView(smoothedLatLng, 13);
+		if (!isUserInteracting) {
+			map.setView(smoothedLatLng, 13);
+		}
 
-    // Calcul de la distance
-    if (positions.length > 1) {
-        const prevLatLng = positions[positions.length - 2];
-        const distance = getDistanceFromLatLonInKm(prevLatLng[0], prevLatLng[1], avgLat, avgLng);
-        totalDistance += distance;
-        distanceDisplay = totalDistance.toFixed(3) + ' km';
+		if (positions.length > 1) {
+			const prevLatLng = positions[positions.length - 2];
+			const distance = getDistanceFromLatLonInKm(prevLatLng[0], prevLatLng[1], avgLat, avgLng);
+			totalDistance += distance;
+			distanceDisplay = totalDistance.toFixed(3) + ' km';
 
-        // Calcul de la vitesse
-        if (lastPositionTime) {
-            const timeDiff = (currentTime - lastPositionTime) / 1000; // secondes
-            const speed = (distance / timeDiff) * 3600; // km/h
-            speedHistory.push(speed);
+			if (lastPositionTime) {
+				const timeDiff = (currentTime - lastPositionTime) / 1000;
+				const speed = (distance / timeDiff) * 3600;
+				speedHistory.push(speed);
 
-            if (speedHistory.length > maxSpeedHistory) {
-                speedHistory.shift();
-            }
+				if (speedHistory.length > maxSpeedHistory) {
+					speedHistory.shift();
+				}
 
-            const avgSpeed = speedHistory.reduce((sum, s) => sum + s, 0) / speedHistory.length;
-            speedDisplay = avgSpeed.toFixed(1) + ' km/h';
-        }
-    }
+				const avgSpeed = speedHistory.reduce((sum, s) => sum + s, 0) / speedHistory.length;
+				speedDisplay = avgSpeed.toFixed(1) + ' km/h';
+			}
+		}
 
-    lastPositionTime = currentTime;
-}
-
+		lastPositionTime = currentTime;
+	}
 
 	function onError(error) {
 		console.error('Erreur de géolocalisation :', error);
 	}
 
 	function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-		const R = 6371; // Rayon de la Terre en km
+		const R = 6371;
 		const dLat = deg2rad(lat2 - lat1);
 		const dLon = deg2rad(lon2 - lon1);
 		const a =
 			Math.sin(dLat / 2) * Math.sin(dLat / 2) +
 			Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
 		const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-		return R * c; // Distance en km
+		return R * c;
 	}
 
 	function deg2rad(deg) {
@@ -241,11 +229,11 @@
 
 	function updateMaxSpeedHistory(newValue) {
 		maxSpeedHistory = newValue;
-		// Vous pouvez également réinitialiser l'historique des vitesses ici si nécessaire
 		speedHistory = [];
 		console.log('maxSpeedHistory:', maxSpeedHistory);
 	}
 </script>
+
 
 <main>
 	<Header />
