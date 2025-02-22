@@ -152,43 +152,69 @@
 	}
 
 	function onPositionReceived(position) {
-		const { latitude, longitude } = position.coords;
-		const latlng = [latitude, longitude];
-		const currentTime = new Date().getTime();
-		positions.push(latlng);
+    const { latitude, longitude, accuracy } = position.coords;
+    const currentTime = new Date().getTime();
+    const latlng = [latitude, longitude];
 
-		if (marker) {
-			marker.setLatLng(latlng);
-		} else {
-			marker = L.marker(latlng).addTo(map);
-		}
+    // Éviter les positions trop imprécises (> 20m)
+    if (accuracy > 20) return;
 
-		polyline.addLatLng(latlng);
-		map.setView(latlng, 13);
+    // Vérifier le mouvement réel
+    if (positions.length > 0) {
+        const prevLatLng = positions[positions.length - 1];
+        const distance = getDistanceFromLatLonInKm(prevLatLng[0], prevLatLng[1], latitude, longitude);
 
-		if (positions.length > 1) {
-			const prevLatLng = positions[positions.length - 2];
-			const distance = getDistanceFromLatLonInKm(prevLatLng[0], prevLatLng[1], latitude, longitude);
-			totalDistance += distance;
-			distanceDisplay = totalDistance.toFixed(3) + ' km'; // Mettre à jour l'affichage de la distance
+        // Seuil de validation du mouvement selon l'activité
+        const movementThreshold = isRunning ? 3 : isWalking ? 5 : 1; // ajustable
+        if (distance < movementThreshold) return;
+    }
 
-			if (lastPositionTime) {
-				const timeDiff = (currentTime - lastPositionTime) / 1000; // en secondes
-				const speed = (distance / timeDiff) * 3600; // en km/h
-				speedHistory.push(speed);
+    positions.push(latlng);
 
-				if (speedHistory.length > maxSpeedHistory) {
-					speedHistory.shift(); // Retirer la valeur la plus ancienne
-				}
+    // Calcul de la moyenne des 5 dernières positions pour lisser
+    if (positions.length > 5) {
+        positions.shift(); // Retirer l'ancienne valeur
+    }
 
-				// Calculer la moyenne des vitesses
-				const avgSpeed = speedHistory.reduce((sum, speed) => sum + speed, 0) / speedHistory.length;
-				speedDisplay = avgSpeed.toFixed(1) + ' km/h';
-			}
+    const avgLat = positions.reduce((sum, p) => sum + p[0], 0) / positions.length;
+    const avgLng = positions.reduce((sum, p) => sum + p[1], 0) / positions.length;
+    const smoothedLatLng = [avgLat, avgLng];
 
-			lastPositionTime = currentTime;
-		}
-	}
+    // Mise à jour du marqueur et de la carte
+    if (marker) {
+        marker.setLatLng(smoothedLatLng);
+    } else {
+        marker = L.marker(smoothedLatLng).addTo(map);
+    }
+
+    polyline.addLatLng(smoothedLatLng);
+    map.setView(smoothedLatLng, 13);
+
+    // Calcul de la distance
+    if (positions.length > 1) {
+        const prevLatLng = positions[positions.length - 2];
+        const distance = getDistanceFromLatLonInKm(prevLatLng[0], prevLatLng[1], avgLat, avgLng);
+        totalDistance += distance;
+        distanceDisplay = totalDistance.toFixed(3) + ' km';
+
+        // Calcul de la vitesse
+        if (lastPositionTime) {
+            const timeDiff = (currentTime - lastPositionTime) / 1000; // secondes
+            const speed = (distance / timeDiff) * 3600; // km/h
+            speedHistory.push(speed);
+
+            if (speedHistory.length > maxSpeedHistory) {
+                speedHistory.shift();
+            }
+
+            const avgSpeed = speedHistory.reduce((sum, s) => sum + s, 0) / speedHistory.length;
+            speedDisplay = avgSpeed.toFixed(1) + ' km/h';
+        }
+    }
+
+    lastPositionTime = currentTime;
+}
+
 
 	function onError(error) {
 		console.error('Erreur de géolocalisation :', error);
