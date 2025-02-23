@@ -195,7 +195,9 @@
 		}
 
 		polyline.addLatLng(latlng);
-		map.setView(latlng, 13);
+
+		// Mettre à jour uniquement la position centrale sans changer le niveau de zoom
+		map.panTo(latlng);
 
 		if (positions.length > 1) {
 			const prevLatLng = positions[positions.length - 2];
@@ -273,16 +275,8 @@
 		speedHistory = [];
 		console.log('maxSpeedHistory:', maxSpeedHistory);
 	}
-
-	async function zoomToPosition() {
-		if (navigator.geolocation && marker) {
-			const position = marker.getLatLng();
-			map.setView(position, 24); // Ajustez le niveau de zoom ici (16 est un exemple)
-		} else {
-			alert("La position actuelle n'est pas disponible.");
-		}
-	}
 </script>
+
 
 
 
@@ -294,7 +288,6 @@
 	{/if}
 
 	<div id="map"></div>
-	<button class="zoom-button" on:click={zoomToPosition}>Zoom sur ma position</button>
 
 	<div class="container__set-up">
 		<div class="wrapper__indicator">
