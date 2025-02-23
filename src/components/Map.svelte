@@ -109,7 +109,7 @@
 			map = L.map('map').setView([48.8566, 2.3522], 13);
 			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 				attribution: '&copy; OpenStreetMap contributors',
-				maxZoom: 18
+				maxZoom: 21
 			}).addTo(map);
 
 			polyline = L.polyline([], { color: 'blue' }).addTo(map);
@@ -443,6 +443,7 @@
 	}
 	.buttons:active {
 		background-color: #275a28;
+		border: 1px solid white;
 	}
 	.indicator {
 		width: 90%;
