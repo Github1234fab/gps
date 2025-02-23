@@ -19,7 +19,21 @@
 	let maxSpeedHistory = 5;
 	let deferredPrompt;
 	let installButton = false;
-	let isUserInteracting = false;
+	let currentMode = 'walk'; // Mode par défaut
+
+	const MODE_THRESHOLDS = {
+		walk: 6,
+		running: 12,
+		bike: 25,
+		car: 120,
+		train: 200,
+		plane: 800
+	};
+
+	function setMode(mode) {
+		currentMode = mode;
+		console.log('Mode sélectionné:', currentMode);
+	}
 
 	function installApp() {
 		if (deferredPrompt) {
@@ -72,7 +86,7 @@
 			polyline = L.polyline([], { color: 'blue' }).addTo(map);
 
 			const customIcon = L.icon({
-				iconUrl: '/pointer.png',
+				iconUrl: '/pointer2.png',
 				iconSize: [25, 25],
 				iconAnchor: [12, 41],
 				popupAnchor: [1, -34],
@@ -87,15 +101,6 @@
 					map.setView(latlng, 13);
 				}, onError);
 			}
-
-			// Ajouter des écouteurs pour détecter les interactions utilisateur
-			map.on('zoomstart dragstart', () => {
-				isUserInteracting = true;
-			});
-
-			map.on('zoomend dragend', () => {
-				isUserInteracting = false;
-			});
 		}
 	});
 
@@ -145,63 +150,70 @@
 		alert(`Distance totale parcourue : ${totalDistance.toFixed(3)} km`);
 	}
 
+	let distanceSinceLastCheck = 0;
+	const MIN_DISTANCE_TO_TRACK = 0.005; // 5 mètres en kilomètres
+
 	function onPositionReceived(position) {
-		const { latitude, longitude, accuracy } = position.coords;
-		const currentTime = new Date().getTime();
+		const { latitude, longitude } = position.coords;
 		const latlng = [latitude, longitude];
-
-		if (accuracy > 20) return;
-
-		if (positions.length > 0) {
-			const prevLatLng = positions[positions.length - 1];
-			const distance = getDistanceFromLatLonInKm(prevLatLng[0], prevLatLng[1], latitude, longitude);
-			const movementThreshold = isRunning ? 3 : isWalking ? 5 : 1;
-			if (distance < movementThreshold) return;
-		}
-
+		const currentTime = new Date().getTime();
 		positions.push(latlng);
 
-		if (positions.length > 5) {
-			positions.shift();
-		}
-
-		const avgLat = positions.reduce((sum, p) => sum + p[0], 0) / positions.length;
-		const avgLng = positions.reduce((sum, p) => sum + p[1], 0) / positions.length;
-		const smoothedLatLng = [avgLat, avgLng];
-
 		if (marker) {
-			marker.setLatLng(smoothedLatLng);
+			marker.setLatLng(latlng);
 		} else {
-			marker = L.marker(smoothedLatLng).addTo(map);
+			marker = L.marker(latlng).addTo(map);
 		}
 
-		polyline.addLatLng(smoothedLatLng);
-
-		if (!isUserInteracting) {
-			map.setView(smoothedLatLng, 13);
-		}
+		polyline.addLatLng(latlng);
+		map.setView(latlng, 13);
 
 		if (positions.length > 1) {
 			const prevLatLng = positions[positions.length - 2];
-			const distance = getDistanceFromLatLonInKm(prevLatLng[0], prevLatLng[1], avgLat, avgLng);
-			totalDistance += distance;
-			distanceDisplay = totalDistance.toFixed(3) + ' km';
+			const distance = getDistanceFromLatLonInKm(prevLatLng[0], prevLatLng[1], latitude, longitude);
+			distanceSinceLastCheck += distance;
 
-			if (lastPositionTime) {
-				const timeDiff = (currentTime - lastPositionTime) / 1000;
-				const speed = (distance / timeDiff) * 3600;
-				speedHistory.push(speed);
+			if (distanceSinceLastCheck >= MIN_DISTANCE_TO_TRACK) {
+				totalDistance += distanceSinceLastCheck;
+				distanceDisplay = totalDistance.toFixed(3) + ' km';
 
-				if (speedHistory.length > maxSpeedHistory) {
-					speedHistory.shift();
+				if (lastPositionTime) {
+					const timeDiff = (currentTime - lastPositionTime) / 1000; // en secondes
+					const speed = (distanceSinceLastCheck / timeDiff) * 3600; // en km/h
+					speedHistory.push(speed);
+
+					if (speedHistory.length > maxSpeedHistory) {
+						speedHistory.shift();
+					}
+
+					const avgSpeed = speedHistory.reduce((sum, speed) => sum + speed, 0) / speedHistory.length;
+					speedDisplay = avgSpeed.toFixed(1) + ' km/h';
+
+					// Mettre à jour le mode en fonction de la vitesse moyenne
+					updateMode(avgSpeed);
 				}
 
-				const avgSpeed = speedHistory.reduce((sum, s) => sum + s, 0) / speedHistory.length;
-				speedDisplay = avgSpeed.toFixed(1) + ' km/h';
+				lastPositionTime = currentTime;
+				distanceSinceLastCheck = 0;
 			}
 		}
+	}
 
-		lastPositionTime = currentTime;
+	function updateMode(speed) {
+		if (speed < MODE_THRESHOLDS.walk) {
+			currentMode = 'walk';
+		} else if (speed < MODE_THRESHOLDS.running) {
+			currentMode = 'running';
+		} else if (speed < MODE_THRESHOLDS.bike) {
+			currentMode = 'bike';
+		} else if (speed < MODE_THRESHOLDS.car) {
+			currentMode = 'car';
+		} else if (speed < MODE_THRESHOLDS.train) {
+			currentMode = 'train';
+		} else {
+			currentMode = 'plane';
+		}
+		console.log('Mode détecté:', currentMode);
 	}
 
 	function onError(error) {
@@ -209,14 +221,14 @@
 	}
 
 	function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-		const R = 6371;
+		const R = 6371; // Rayon de la Terre en km
 		const dLat = deg2rad(lat2 - lat1);
 		const dLon = deg2rad(lon2 - lon1);
 		const a =
 			Math.sin(dLat / 2) * Math.sin(dLat / 2) +
 			Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
 		const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-		return R * c;
+		return R * c; // Distance en km
 	}
 
 	function deg2rad(deg) {
