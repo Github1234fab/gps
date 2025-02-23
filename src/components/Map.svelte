@@ -30,6 +30,35 @@
 		plane: 800
 	};
 
+	async function requestGeolocationPermission() {
+		if ('permissions' in navigator) {
+			const permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
+			if (permissionStatus.state === 'denied') {
+				alert("La géolocalisation est désactivée. Veuillez l'activer dans les paramètres de votre navigateur.");
+			} else if (permissionStatus.state === 'prompt') {
+				navigator.geolocation.getCurrentPosition(
+					(position) => {
+						const { latitude, longitude } = position.coords;
+						const latlng = [latitude, longitude];
+						marker = L.marker(latlng, { icon: customIcon }).addTo(map);
+						map.setView(latlng, 13);
+					},
+					onError
+				);
+			}
+		} else {
+			navigator.geolocation.getCurrentPosition(
+				(position) => {
+					const { latitude, longitude } = position.coords;
+					const latlng = [latitude, longitude];
+					marker = L.marker(latlng, { icon: customIcon }).addTo(map);
+					map.setView(latlng, 13);
+				},
+				onError
+			);
+		}
+	}
+
 	function setMode(mode) {
 		currentMode = mode;
 		console.log('Mode sélectionné:', currentMode);
