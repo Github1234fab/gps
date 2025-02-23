@@ -273,7 +273,17 @@
 		speedHistory = [];
 		console.log('maxSpeedHistory:', maxSpeedHistory);
 	}
+
+	async function zoomToPosition() {
+		if (navigator.geolocation && marker) {
+			const position = marker.getLatLng();
+			map.setView(position, 24); // Ajustez le niveau de zoom ici (16 est un exemple)
+		} else {
+			alert("La position actuelle n'est pas disponible.");
+		}
+	}
 </script>
+
 
 
 <main>
@@ -284,6 +294,7 @@
 	{/if}
 
 	<div id="map"></div>
+	<button class="zoom-button" on:click={zoomToPosition}>Zoom sur ma position</button>
 
 	<div class="container__set-up">
 		<div class="wrapper__indicator">
@@ -387,13 +398,13 @@
 	}
 
 	.button-modes {
-		background-color: #8796e126;
+		background-color:  #ffc107bb ;
 		border: none;
 		cursor: pointer;
 		width: 50px;
 		height: 50px;
 		border-radius: 50%;
-		box-shadow: 0px 0px 10px #7879d7;
+		box-shadow: 0px 0px 10px black;
 	}
 	.button-modes:active {
 		background-color: #8796e1;
