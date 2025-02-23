@@ -331,7 +331,7 @@
 <style>
 	#map {
 		width: 100%;
-		height: 650px;
+		height: 350px;
 		margin-bottom: 10px;
 		z-index: 0;
 	}
@@ -351,7 +351,7 @@
 		align-items: center;
 		flex-direction: column;
 		justify-content: space-around;
-		width: 100%;
+		width: 50%;
 		gap: 5px;
 		margin-top: 10px;
 		background-color: rgb(56, 55, 55);
@@ -473,6 +473,7 @@
 		.wrapper__indicator {
 			margin-top: 5px;
 			gap: 5px;
+			width: 100%;
 		}
 		.buttons {
 			background-color: #4caf50;
