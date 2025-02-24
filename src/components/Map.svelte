@@ -21,6 +21,7 @@
 	let installButton = false;
 	let currentMode = 'walk'; // Mode par défaut
 
+	// objet pour les seuils de vitesse pour chaque mode de transport
 	const MODE_THRESHOLDS = {
 		walk: 6,
 		running: 12,
@@ -30,40 +31,40 @@
 		plane: 800
 	};
 
+	//fonction pour demander la permission de géolocalisation quuand elle n'est pas demandée par le navigateur
 	async function requestGeolocationPermission() {
 		if ('permissions' in navigator) {
 			const permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
 			if (permissionStatus.state === 'denied') {
-				alert("La géolocalisation est désactivée. Veuillez l'activer dans les paramètres de votre navigateur.");
-			} else if (permissionStatus.state === 'prompt') {
-				navigator.geolocation.getCurrentPosition(
-					(position) => {
-						const { latitude, longitude } = position.coords;
-						const latlng = [latitude, longitude];
-						marker = L.marker(latlng, { icon: customIcon }).addTo(map);
-						map.setView(latlng, 13);
-					},
-					onError
+				alert(
+					"La géolocalisation est désactivée. Veuillez l'activer dans les paramètres de votre navigateur."
 				);
-			}
-		} else {
-			navigator.geolocation.getCurrentPosition(
-				(position) => {
+			} else if (permissionStatus.state === 'prompt') {
+				navigator.geolocation.getCurrentPosition((position) => {
 					const { latitude, longitude } = position.coords;
 					const latlng = [latitude, longitude];
 					marker = L.marker(latlng, { icon: customIcon }).addTo(map);
 					map.setView(latlng, 13);
-				},
-				onError
-			);
+				}, onError);
+			}
+		} else {
+			navigator.geolocation.getCurrentPosition((position) => {
+				const { latitude, longitude } = position.coords;
+				const latlng = [latitude, longitude];
+				marker = L.marker(latlng, { icon: customIcon }).addTo(map);
+				map.setView(latlng, 13);
+			}, onError);
 		}
 	}
+
+	//fonction pour changer le mode de transport en fonction de la vitesse
 
 	function setMode(mode) {
 		currentMode = mode;
 		console.log('Mode sélectionné:', currentMode);
 	}
 
+	//fonction pour installer l'application
 	function installApp() {
 		if (deferredPrompt) {
 			deferredPrompt.prompt();
@@ -80,6 +81,7 @@
 
 	onMount(async () => {
 		if (typeof window !== 'undefined') {
+			// fonction pour vérifier si l'appareil est un appareil iOS
 			function isIOS() {
 				return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 			}
@@ -90,12 +92,14 @@
 				);
 			}
 
+			// événement pour écouter l'événement beforeinstallprompt. Si il est déclenché, on empêche le comportement par défaut et on stocke l'événement dans une variable deferredPrompt
 			window.addEventListener('beforeinstallprompt', (e) => {
 				e.preventDefault();
 				deferredPrompt = e;
 				installButton = true;
 			});
 
+			// ecooute de l'événement appinstalled pour afficher un message de confirmation
 			window.addEventListener('appinstalled', (evt) => {
 				installButton = false;
 				alert(
@@ -103,14 +107,15 @@
 				);
 			});
 
+			// chargement de la carte et des dépendances
 			const L = await import('leaflet');
 			await import('leaflet/dist/leaflet.css');
 
 			map = L.map('map').setView([48.8566, 2.3522], 13);
-			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-				attribution: '&copy; OpenStreetMap contributors',
-				maxZoom: 21
-			}).addTo(map);
+			L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+    maxZoom: 20
+}).addTo(map);
 
 			polyline = L.polyline([], { color: 'blue' }).addTo(map);
 
@@ -122,6 +127,7 @@
 				shadowSize: [41, 41]
 			});
 
+			//condition pour demander la permission de géolocalisation si elle n'est pas demandée par le navigateur
 			if (navigator.geolocation) {
 				navigator.geolocation.getCurrentPosition((position) => {
 					const { latitude, longitude } = position.coords;
@@ -133,6 +139,7 @@
 		}
 	});
 
+	// fonction pour démarrer le tracking
 	async function startTracking() {
 		if (typeof window !== 'undefined' && navigator.geolocation) {
 			isCalculating = true;
@@ -145,6 +152,7 @@
 		}
 	}
 
+	// fonction pour mettre en pause le tracking
 	function togglePauseTracking() {
 		if (isCalculating) {
 			if (watchId) {
@@ -157,6 +165,7 @@
 		isCalculating = !isCalculating;
 	}
 
+	// fonction pour réinitialiser le tracking
 	function resetTracking() {
 		positions = [];
 		totalDistance = 0;
@@ -170,6 +179,7 @@
 		speedHistory = [];
 	}
 
+	// fonction pour terminer le tracking
 	function finishTracking() {
 		if (watchId) {
 			navigator.geolocation.clearWatch(watchId);
@@ -179,15 +189,18 @@
 		alert(`Distance totale parcourue : ${totalDistance.toFixed(3)} km`);
 	}
 
+	// Variables pour le calcul de la distance et de la vitesse
 	let distanceSinceLastCheck = 0;
 	const MIN_DISTANCE_TO_TRACK = 0.005; // 5 mètres en kilomètres
 
+	// Fonction pour mettre à jour la position
 	function onPositionReceived(position) {
 		const { latitude, longitude } = position.coords;
 		const latlng = [latitude, longitude];
 		const currentTime = new Date().getTime();
 		positions.push(latlng);
 
+		// Mettre à jour le marqueur et la ligne
 		if (marker) {
 			marker.setLatLng(latlng);
 		} else {
@@ -199,25 +212,30 @@
 		// Mettre à jour uniquement la position centrale sans changer le niveau de zoom
 		map.panTo(latlng);
 
+		// Calculer la distance parcourue
 		if (positions.length > 1) {
 			const prevLatLng = positions[positions.length - 2];
 			const distance = getDistanceFromLatLonInKm(prevLatLng[0], prevLatLng[1], latitude, longitude);
 			distanceSinceLastCheck += distance;
 
+			// Mettre à jour la distance totale parcourue
 			if (distanceSinceLastCheck >= MIN_DISTANCE_TO_TRACK) {
 				totalDistance += distanceSinceLastCheck;
 				distanceDisplay = totalDistance.toFixed(3) + ' km';
 
+				// Calculer la vitesse
 				if (lastPositionTime) {
 					const timeDiff = (currentTime - lastPositionTime) / 1000; // en secondes
 					const speed = (distanceSinceLastCheck / timeDiff) * 3600; // en km/h
 					speedHistory.push(speed);
 
+					// Garder un historique de vitesse pour calculer la vitesse moyenne
 					if (speedHistory.length > maxSpeedHistory) {
 						speedHistory.shift();
 					}
-
-					const avgSpeed = speedHistory.reduce((sum, speed) => sum + speed, 0) / speedHistory.length;
+					// Calculer la vitesse moyenne
+					const avgSpeed =
+						speedHistory.reduce((sum, speed) => sum + speed, 0) / speedHistory.length;
 					speedDisplay = avgSpeed.toFixed(1) + ' km/h';
 
 					// Mettre à jour le mode en fonction de la vitesse moyenne
@@ -229,7 +247,7 @@
 			}
 		}
 	}
-
+	// fonction pour mettre à jour le mode de transport en fonction de la vitesse
 	function updateMode(speed) {
 		if (speed < MODE_THRESHOLDS.walk) {
 			currentMode = 'walk';
@@ -246,11 +264,11 @@
 		}
 		console.log('Mode détecté:', currentMode);
 	}
-
+	// fonction pour gérer les erreurs de géolocalisation
 	function onError(error) {
 		console.error('Erreur de géolocalisation :', error);
 	}
-
+	// fonction pour calculer la distance entre deux points géographiques
 	function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
 		const R = 6371; // Rayon de la Terre en km
 		const dLat = deg2rad(lat2 - lat1);
@@ -261,15 +279,15 @@
 		const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 		return R * c; // Distance en km
 	}
-
+	// fonction pour convertir les degrés en radians
 	function deg2rad(deg) {
 		return deg * (Math.PI / 180);
 	}
-
+	//fonction pour afficher le popup
 	function display() {
 		showPopup = false;
 	}
-
+	//fonction pour mettre à jour l'historique de vitesse
 	function updateMaxSpeedHistory(newValue) {
 		maxSpeedHistory = newValue;
 		speedHistory = [];
@@ -277,51 +295,50 @@
 	}
 </script>
 
-
-
-
 <main>
-	<Header />
+	<!-- <Header /> -->
 
 	{#if installButton}
 		<button class="install-button" on:click={installApp}>Installer</button>
 	{/if}
 
 	<div id="map"></div>
-
-	<div class="container__set-up">
-		<div class="wrapper__indicator">
-			<div class="indicator" id="distance">
-				<span>Distance parcourue :</span> <br />
-				{distanceDisplay}
-			</div>
-			<div class="indicator" id="speed"><span>Vitesse actuelle : </span> <br />{speedDisplay}</div>
+	<!-- <div class="container__set-up"> -->
+	<div class="wrapper__indicator">
+		<div class="indicator" id="distance">
+			<img src="/distance.png" alt="icon d'itinéraire" class="indicator-img" /> <br />
+			{distanceDisplay}
+		</div>
+		<div class="indicator" id="speed">
+			<img src="/vitesse.png" alt="icon d'un compteur de vitesse" class="indicator-img" />
+			<br />{speedDisplay}
 		</div>
 	</div>
-  <div class="container__wrapper__buttons-modes">
-	<div class="wrapper__buttons-modes">
-		<button class="button-modes" on:click={() => updateMaxSpeedHistory(10)}
-			><img class="img-modes" src="/walk.png" alt="icone d'un marcheur" /></button
-		>
-		<button class="button-modes" on:click={() => updateMaxSpeedHistory(5)}
-			><img class="img-modes" src="/running.png" alt="icone d'un coureur" /></button
-		>
-		<button class="button-modes" on:click={() => updateMaxSpeedHistory(7)}
-			><img class="img-modes" src="/car.png" alt="icone d'un vélo" /></button
-		>
+	<!-- </div> -->
+	<div class="container__wrapper__buttons-modes">
+		<div class="wrapper__buttons-modes">
+			<button class="button-modes" on:click={() => updateMaxSpeedHistory(10)}
+				><img class="img-modes" src="/walk.png" alt="icone d'un marcheur" /></button
+			>
+			<button class="button-modes" on:click={() => updateMaxSpeedHistory(5)}
+				><img class="img-modes" src="/running.png" alt="icone d'un coureur" /></button
+			>
+			<button class="button-modes" on:click={() => updateMaxSpeedHistory(7)}
+				><img class="img-modes" src="/car.png" alt="icone d'un vélo" /></button
+			>
+		</div>
+		<div class="wrapper__buttons-modes-B">
+			<button class="button-modes" on:click={() => updateMaxSpeedHistory(3)}
+				><img class="img-modes" src="/bike.png" alt="icone d'une voiture" /></button
+			>
+			<button class="button-modes" on:click={() => updateMaxSpeedHistory(3)}
+				><img class="img-modes" src="/train.png" alt="icone d'un train" /></button
+			>
+			<button class="button-modes" on:click={() => updateMaxSpeedHistory(1)}
+				><img class="img-modes" src="/plane.png" alt="icone d'un avion" /></button
+			>
+		</div>
 	</div>
-	<div class="wrapper__buttons-modes-B">
-		<button class="button-modes" on:click={() => updateMaxSpeedHistory(3)}
-			><img class="img-modes" src="/bike.png" alt="icone d'une voiture" /></button
-		>
-		<button class="button-modes" on:click={() => updateMaxSpeedHistory(3)}
-			><img class="img-modes" src="/train.png" alt="icone d'un train" /></button
-		>
-		<button class="button-modes" on:click={() => updateMaxSpeedHistory(1)}
-			><img class="img-modes" src="/plane.png" alt="icone d'un avion" /></button
-		>
-	</div>
-</div>
 	<div class="wrapper__buttons">
 		<button class="buttons" on:click={startTracking} disabled={isCalculating}>Start</button>
 		<button class="buttons" on:click={togglePauseTracking}
@@ -335,63 +352,63 @@
 <style>
 	#map {
 		width: 100%;
-		height: 350px;
+		height: 100vh;
 		margin-bottom: 10px;
 		z-index: 0;
+		position: relative;
 	}
 	main {
 		height: auto;
 		width: auto;
 	}
-	.container__set-up {
+
+	.container__wrapper__buttons-modes {
 		display: flex;
 		flex-direction: column;
-		align-items: center;
-		justify-content: center;
+		margin-top: 25px;
+		gap: 12px;
+		position: absolute;
+		top: min(70vh);
+		left: 10%;
+		transform: translate(-50%, -50%);
 	}
 
 	.wrapper__indicator {
 		display: flex;
 		align-items: center;
-		flex-direction: column;
-		justify-content: space-around;
-		width: 50%;
+		justify-content: center;
 		gap: 5px;
-		margin-top: 10px;
-		background-color: rgb(56, 55, 55);
-		color: white;
+		position: absolute;
+		top: 10px;
+		left: 72%;
+		transform: translate(-50%, 0);
 	}
 	.wrapper__buttons {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		flex-wrap: wrap;
+		flex-direction: column;
 		gap: 10px;
-		height: 100%;
-		width: 100%;
-		margin-top: 40px;
-		background-color: rgb(56, 55, 55);
+		background-color: rgba(56, 55, 55, 0);
+		position: absolute;
+		top: min(70vh);
+		left: 65%;
 	}
-  .container__wrapper__buttons-modes {
-    display: flex;
-    flex-direction: column;
-    margin-top: 25px;
-    gap: 12px;
-  }
+
 	.wrapper__buttons-modes,
 	.wrapper__buttons-modes-B {
 		display: flex;
+		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		flex-wrap: wrap;
 		gap: 15px;
 		height: 100%;
 		width: 100%;
-
 	}
 
 	.button-modes {
-		background-color:  #ffc107bb ;
+		background-color: #ffc107bb;
 		border: none;
 		cursor: pointer;
 		width: 50px;
@@ -428,14 +445,15 @@
 	}
 
 	.buttons {
-		background-color: #4caf50;
+		background-color: #227aff;
 		border: none;
 		color: rgb(255, 255, 255);
 		padding: 10px 25px;
 		text-align: center;
 		text-decoration: none;
 		display: inline-block;
-		font-size: 16px;
+		font-size: 0.8rem;
+		font-weight: 500;
 		cursor: pointer;
 		border-radius: 15px;
 		width: 110px;
@@ -446,76 +464,22 @@
 		border: 1px solid white;
 	}
 	.indicator {
-		width: 90%;
 		text-align: center;
-		align-self: flex-end;
 		border-radius: 15px;
-		padding: 15px;
-		margin: 0 auto;
-		background-color: #2b2828;
+		padding: 8px;
+		background-color: rgb(255, 255, 255);
+		-webkit-backdrop-filter: blur(10px);
+		backdrop-filter: blur(5px);
 		text-shadow: 0px 0px 1px #fdfdfd;
 		font-weight: bolder;
-		box-shadow: inset 0px 0px 5px 2px #000000;
-		font-size: 1.5rem;
-	}
-	.indicator span {
-		font-weight: 100;
+		box-shadow: 0px 0px 5px #000000;
 		font-size: 1rem;
-		align-self: flex-start;
+		color: black;
+		min-width: 80%;
 	}
 
-	@media screen and (max-width: 600px) {
-		#map {
-			width: 100%;
-			height: 240px;
-		}
-		.wrapper__buttons {
-			flex-direction: row;
-			flex-wrap: wrap;
-			gap: 10px;
-			margin-top: 25px;
-		}
-		.wrapper__indicator {
-			margin-top: 5px;
-			gap: 5px;
-			width: 100%;
-		}
-		.buttons {
-			background-color: #4caf50;
-			border: none;
-			color: white;
-			padding: 10px 25px;
-			text-align: center;
-			text-decoration: none;
-			display: inline-block;
-			font-size: 16px;
-			cursor: pointer;
-			border-radius: 15px;
-			width: 120px;
-			box-shadow: 0px 0px 10px #000000;
-		}
-
-		.buttons:active {
-			background-color: #275a28;
-			/* border: 1px solid rgb(221, 210, 210); */
-		}
-		.indicator {
-			width: 70%;
-			text-align: center;
-			align-self: flex-end;
-			border-radius: 15px;
-			padding: 8px 10px;
-			margin: 0 auto;
-			background-color: #2b2828;
-			text-shadow: 0px 0px 1px #fdfdfd;
-			font-weight: bolder;
-			box-shadow: inset 0px 0px 5px 2px #000000;
-			font-size: 1.5rem;
-		}
-		.indicator span {
-			font-weight: 100;
-			font-size: 1rem;
-			align-self: flex-start;
-		}
+	.indicator-img {
+		width: 30px;
+		height: 30px;
 	}
 </style>
