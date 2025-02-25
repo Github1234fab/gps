@@ -113,9 +113,9 @@
 
 			map = L.map('map').setView([48.8566, 2.3522], 13);
 			L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
-    maxZoom: 20
-}).addTo(map);
+				attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+				maxZoom: 20
+			}).addTo(map);
 
 			polyline = L.polyline([], { color: 'blue' }).addTo(map);
 
@@ -323,13 +323,15 @@
 			<button class="button-modes" on:click={() => updateMaxSpeedHistory(5)}
 				><img class="img-modes" src="/running.png" alt="icone d'un coureur" /></button
 			>
-			<button class="button-modes" on:click={() => updateMaxSpeedHistory(7)}
-				><img class="img-modes" src="/car.png" alt="icone d'un vélo" /></button
-			>
-		</div>
-		<div class="wrapper__buttons-modes-B">
 			<button class="button-modes" on:click={() => updateMaxSpeedHistory(3)}
 				><img class="img-modes" src="/bike.png" alt="icone d'une voiture" /></button
+			>
+		
+		</div>
+		<div class="wrapper__buttons-modes-B">
+			
+			<button class="button-modes" on:click={() => updateMaxSpeedHistory(7)}
+				><img class="img-modes" src="/car.png" alt="icone d'un vélo" /></button
 			>
 			<button class="button-modes" on:click={() => updateMaxSpeedHistory(3)}
 				><img class="img-modes" src="/train.png" alt="icone d'un train" /></button
@@ -368,7 +370,7 @@
 		margin-top: 25px;
 		gap: 12px;
 		position: absolute;
-		top: min(70vh);
+		top: min(72vh);
 		left: 10%;
 		transform: translate(-50%, -50%);
 	}
@@ -380,7 +382,7 @@
 		gap: 5px;
 		position: absolute;
 		top: 10px;
-		left: 72%;
+		left: 70%;
 		transform: translate(-50%, 0);
 	}
 	.wrapper__buttons {
@@ -391,8 +393,8 @@
 		gap: 10px;
 		background-color: rgba(56, 55, 55, 0);
 		position: absolute;
-		top: min(70vh);
-		left: 65%;
+		top: min(75vh);
+		left: 62%;
 	}
 
 	.wrapper__buttons-modes,
@@ -402,19 +404,19 @@
 		align-items: center;
 		justify-content: center;
 		flex-wrap: wrap;
-		gap: 15px;
+		gap: 5px;
 		height: 100%;
 		width: 100%;
 	}
 
 	.button-modes {
-		background-color: #ffc107bb;
+		background-color: #009687;
 		border: none;
 		cursor: pointer;
 		width: 50px;
 		height: 50px;
 		border-radius: 50%;
-		box-shadow: 0px 0px 10px black;
+		box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.36);
 	}
 	.button-modes:active {
 		background-color: #8796e1;
@@ -457,7 +459,7 @@
 		cursor: pointer;
 		border-radius: 15px;
 		width: 110px;
-		box-shadow: 0px 0px 10px #000000;
+		box-shadow: 0px 0px 10px #00000058;
 	}
 	.buttons:active {
 		background-color: #275a28;
@@ -467,19 +469,33 @@
 		text-align: center;
 		border-radius: 15px;
 		padding: 8px;
-		background-color: rgb(255, 255, 255);
+		background-color: rgba(255, 255, 255, 0.264);
 		-webkit-backdrop-filter: blur(10px);
 		backdrop-filter: blur(5px);
 		text-shadow: 0px 0px 1px #fdfdfd;
 		font-weight: bolder;
-		box-shadow: 0px 0px 5px #000000;
+		box-shadow: inset 0px 0px 2px 2px #000000;
 		font-size: 1rem;
-		color: black;
+		color: #FF8C00;
 		min-width: 80%;
 	}
 
 	.indicator-img {
 		width: 30px;
 		height: 30px;
+	}
+
+	@media screen and (min-width: 768px) {
+		.wrapper__buttons {
+			top: min(75vh);
+			left: min(80vw);
+		}
+
+		.wrapper__indicator {
+			left: min(80vw);
+		}
+		.container__wrapper__buttons-modes {
+			top: min(70vh);
+		}
 	}
 </style>
