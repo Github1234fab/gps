@@ -391,7 +391,6 @@
 		justify-content: center;
 		flex-direction: column;
 		gap: 10px;
-		background-color: rgba(56, 55, 55, 0);
 		position: absolute;
 		top: min(75vh);
 		left: 62%;
