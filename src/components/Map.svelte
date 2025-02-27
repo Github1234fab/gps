@@ -122,7 +122,7 @@
 			const customIcon = L.icon({
 				iconUrl: '/pointer2.png',
 				iconSize: [25, 25],
-				iconAnchor: [12, 41],
+				iconAnchor: [12, 42],
 				popupAnchor: [1, -34],
 				shadowSize: [41, 41]
 			});
@@ -326,10 +326,8 @@
 			<button class="button-modes" on:click={() => updateMaxSpeedHistory(3)}
 				><img class="img-modes" src="/bike.png" alt="icone d'une voiture" /></button
 			>
-		
 		</div>
 		<div class="wrapper__buttons-modes-B">
-			
 			<button class="button-modes" on:click={() => updateMaxSpeedHistory(7)}
 				><img class="img-modes" src="/car.png" alt="icone d'un vélo" /></button
 			>
@@ -449,33 +447,33 @@
 		background-color: #227aff;
 		border: none;
 		color: rgb(255, 255, 255);
-		padding: 10px 25px;
+		padding: 15px 25px;
 		text-align: center;
 		text-decoration: none;
 		display: inline-block;
 		font-size: 0.8rem;
-		font-weight: 500;
+		font-weight: 700;
 		cursor: pointer;
 		border-radius: 15px;
 		width: 110px;
 		box-shadow: 0px 0px 10px #00000058;
 	}
+	.buttons:hover {
+		border: 2px solid white;
+	}
 	.buttons:active {
-		background-color: #275a28;
-		border: 1px solid white;
+		border: 2px solid white;
 	}
 	.indicator {
 		text-align: center;
 		border-radius: 15px;
 		padding: 8px;
-		background-color: rgba(255, 255, 255, 0.264);
-		-webkit-backdrop-filter: blur(10px);
-		backdrop-filter: blur(5px);
+		background-color: rgba(255, 255, 255, 0.851);
 		text-shadow: 0px 0px 1px #fdfdfd;
 		font-weight: bolder;
-		box-shadow: inset 0px 0px 2px 2px #000000;
+		box-shadow: inset 0px 0px 2px #000000;
 		font-size: 1rem;
-		color: #FF8C00;
+		color: #161616;
 		min-width: 80%;
 	}
 
