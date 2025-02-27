@@ -390,7 +390,7 @@
 		flex-direction: column;
 		gap: 10px;
 		position: absolute;
-		top: min(75vh);
+		top: min(70vh);
 		left: 62%;
 	}
 
