@@ -122,7 +122,7 @@
 			const customIcon = L.icon({
 				iconUrl: '/pointer2.png',
 				iconSize: [25, 25],
-				iconAnchor: [12, 44],
+				iconAnchor: [12, 35],
 				popupAnchor: [1, -34],
 				shadowSize: [41, 41]
 			});
