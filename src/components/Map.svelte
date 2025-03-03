@@ -23,7 +23,7 @@
 
 	// objet pour les seuils de vitesse pour chaque mode de transport
 	const MODE_THRESHOLDS = {
-		walk: 6,
+		walk: 5,
 		running: 12,
 		bike: 25,
 		car: 120,
@@ -368,7 +368,7 @@
 		margin-top: 25px;
 		gap: 12px;
 		position: absolute;
-		top: min(72vh);
+		top: min(65vh);
 		left: 10%;
 		transform: translate(-50%, -50%);
 	}
@@ -390,7 +390,7 @@
 		flex-direction: column;
 		gap: 10px;
 		position: absolute;
-		top: min(70vh);
+		top: min(60vh);
 		left: 62%;
 	}
 
@@ -401,7 +401,7 @@
 		align-items: center;
 		justify-content: center;
 		flex-wrap: wrap;
-		gap: 5px;
+		gap: 5px;	
 		height: 100%;
 		width: 100%;
 	}
