@@ -211,7 +211,7 @@
 
 	// Variables pour le calcul de la distance et de la vitesse
 	let distanceSinceLastCheck = 0;
-	const MIN_DISTANCE_TO_TRACK = 0.005; // 5 mètres en kilomètres
+	const MIN_DISTANCE_TO_TRACK = 0.010; // 5 mètres en kilomètres
 
 	// Fonction pour mettre à jour la position
 	function onPositionReceived(position) {
