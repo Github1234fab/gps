@@ -149,18 +149,23 @@
 
 	// fonction pour démarrer le tracking
 	async function startTracking() {
-		if (typeof window !== 'undefined' && navigator.geolocation) {
-			currentMode = 'walk'; // Activer le mode "walk" par défaut au démarrage
-			isCalculating = true;
-			watchId = navigator.geolocation.watchPosition(onPositionReceived, onError, {
-				enableHighAccuracy: true,
-				maximumAge: 0
-			});
-			updateActiveClass(); // Mettre à jour la classe active
-		} else {
-			alert("La géolocalisation n'est pas supportée par votre navigateur.");
+	if (typeof window !== 'undefined' && navigator.geolocation) {
+		if (!marker) {
+			alert("La géolocalisation n'a pas encore été activée. Veuillez activer la localisation avant de commencer le tracking.");
+			return;
 		}
+		
+		currentMode = 'walk'; // Activer le mode "walk" par défaut au démarrage
+		isCalculating = true;
+		watchId = navigator.geolocation.watchPosition(onPositionReceived, onError, {
+			enableHighAccuracy: true,
+			maximumAge: 0
+		});
+		updateActiveClass(); // Mettre à jour la classe active
+	} else {
+		alert("La géolocalisation n'est pas supportée par votre navigateur.");
 	}
+}
 
 	// fonction pour mettre en pause le tracking
 	function togglePauseTracking() {
