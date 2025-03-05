@@ -57,13 +57,14 @@
 		}
 	}
 
+	// Fonction pour changer le mode de transport en fonction de la vitesse
+	function setMode(mode) {
+		currentMode = mode;
+		console.log('Mode sélectionné:', currentMode);
 
-
-// Fonction pour changer le mode de transport en fonction de la vitesse
-function setMode(mode) {
-    currentMode = mode;
-    console.log('Mode sélectionné:', currentMode);
-}
+		// Mettre à jour l'interface utilisateur pour refléter le mode actif
+		updateUIForMode(mode);
+	}
 
 	//fonction pour installer l'application
 	function installApp() {
@@ -141,21 +142,21 @@ function setMode(mode) {
 	});
 
 	// Fonction pour démarrer le tracking
-async function startTracking() {
-    if (typeof window !== 'undefined' && navigator.geolocation) {
-        isCalculating = true;
+	async function startTracking() {
+		if (typeof window !== 'undefined' && navigator.geolocation) {
+			isCalculating = true;
 
-        // Activer le mode "marche" au démarrage
-        setMode('walk');
+			// Activer le mode "marche" au démarrage
+			setMode('walk');
 
-        watchId = navigator.geolocation.watchPosition(onPositionReceived, onError, {
-            enableHighAccuracy: true,
-            maximumAge: 0
-        });
-    } else {
-        alert("La géolocalisation n'est pas supportée par votre navigateur.");
-    }
-}
+			watchId = navigator.geolocation.watchPosition(onPositionReceived, onError, {
+				enableHighAccuracy: true,
+				maximumAge: 0
+			});
+		} else {
+			alert("La géolocalisation n'est pas supportée par votre navigateur.");
+		}
+	}
 
 	// fonction pour mettre en pause le tracking
 	function togglePauseTracking() {
@@ -200,80 +201,80 @@ async function startTracking() {
 
 	let firstPositionReceived = false;
 
-// Fonction pour mettre à jour la position
-function onPositionReceived(position) {
-    const { latitude, longitude, accuracy } = position.coords;
-    const latlng = [latitude, longitude];
-    const currentTime = new Date().getTime();
+	// Fonction pour mettre à jour la position
+	function onPositionReceived(position) {
+		const { latitude, longitude, accuracy } = position.coords;
+		const latlng = [latitude, longitude];
+		const currentTime = new Date().getTime();
 
-    // Ignorer les positions avec une précision trop faible
-    if (accuracy > 50) {
-        console.log('Précision trop faible, position ignorée');
-        return;
-    }
+		// Ignorer les positions avec une précision trop faible
+		if (accuracy > 50) {
+			console.log('Précision trop faible, position ignorée');
+			return;
+		}
 
-    // Ignorer la première position pour éviter les variations initiales
-    if (!firstPositionReceived) {
-        firstPositionReceived = true;
-        positions.push(latlng);
-        if (marker) {
-            marker.setLatLng(latlng);
-        } else {
-            marker = L.marker(latlng).addTo(map);
-        }
-        map.panTo(latlng);
-        return;
-    }
+		// Ignorer la première position pour éviter les variations initiales
+		if (!firstPositionReceived) {
+			firstPositionReceived = true;
+			positions.push(latlng);
+			if (marker) {
+				marker.setLatLng(latlng);
+			} else {
+				marker = L.marker(latlng).addTo(map);
+			}
+			map.panTo(latlng);
+			return;
+		}
 
-    positions.push(latlng);
+		positions.push(latlng);
 
-    // Mettre à jour le marqueur et la ligne
-    if (marker) {
-        marker.setLatLng(latlng);
-    } else {
-        marker = L.marker(latlng).addTo(map);
-    }
+		// Mettre à jour le marqueur et la ligne
+		if (marker) {
+			marker.setLatLng(latlng);
+		} else {
+			marker = L.marker(latlng).addTo(map);
+		}
 
-    polyline.addLatLng(latlng);
+		polyline.addLatLng(latlng);
 
-    // Mettre à jour uniquement la position centrale sans changer le niveau de zoom
-    map.panTo(latlng);
+		// Mettre à jour uniquement la position centrale sans changer le niveau de zoom
+		map.panTo(latlng);
 
-    // Calculer la distance parcourue
-    if (positions.length > 1) {
-        const prevLatLng = positions[positions.length - 2];
-        const distance = getDistanceFromLatLonInKm(prevLatLng[0], prevLatLng[1], latitude, longitude);
-        distanceSinceLastCheck += distance;
+		// Calculer la distance parcourue
+		if (positions.length > 1) {
+			const prevLatLng = positions[positions.length - 2];
+			const distance = getDistanceFromLatLonInKm(prevLatLng[0], prevLatLng[1], latitude, longitude);
+			distanceSinceLastCheck += distance;
 
-        // Mettre à jour la distance totale parcourue
-        if (distanceSinceLastCheck >= MIN_DISTANCE_TO_TRACK) {
-            totalDistance += distanceSinceLastCheck;
-            distanceDisplay = totalDistance.toFixed(3) + ' km';
+			// Mettre à jour la distance totale parcourue
+			if (distanceSinceLastCheck >= MIN_DISTANCE_TO_TRACK) {
+				totalDistance += distanceSinceLastCheck;
+				distanceDisplay = totalDistance.toFixed(3) + ' km';
 
-            // Calculer la vitesse
-            if (lastPositionTime) {
-                const timeDiff = (currentTime - lastPositionTime) / 1000; // en secondes
-                const speed = (distanceSinceLastCheck / timeDiff) * 3600; // en km/h
-                speedHistory.push(speed);
+				// Calculer la vitesse
+				if (lastPositionTime) {
+					const timeDiff = (currentTime - lastPositionTime) / 1000; // en secondes
+					const speed = (distanceSinceLastCheck / timeDiff) * 3600; // en km/h
+					speedHistory.push(speed);
 
-                // Garder un historique de vitesse pour calculer la vitesse moyenne
-                if (speedHistory.length > maxSpeedHistory) {
-                    speedHistory.shift();
-                }
-                // Calculer la vitesse moyenne
-                const avgSpeed =
-                    speedHistory.reduce((sum, speed) => sum + speed, 0) / speedHistory.length;
-                speedDisplay = avgSpeed.toFixed(1) + ' km/h';
+					// Garder un historique de vitesse pour calculer la vitesse moyenne
+					if (speedHistory.length > maxSpeedHistory) {
+						speedHistory.shift();
+					}
+					// Calculer la vitesse moyenne
+					const avgSpeed =
+						speedHistory.reduce((sum, speed) => sum + speed, 0) / speedHistory.length;
+					speedDisplay = avgSpeed.toFixed(1) + ' km/h';
 
-                // Mettre à jour le mode en fonction de la vitesse moyenne
-                updateMode(avgSpeed);
-            }
+					// Mettre à jour le mode en fonction de la vitesse moyenne
+					updateMode(avgSpeed);
+				}
 
-            lastPositionTime = currentTime;
-            distanceSinceLastCheck = 0;
-        }
-    }
-}
+				lastPositionTime = currentTime;
+				distanceSinceLastCheck = 0;
+			}
+		}
+	}
 
 	// fonction pour mettre à jour le mode de transport en fonction de la vitesse
 	function updateMode(speed) {
@@ -292,10 +293,25 @@ function onPositionReceived(position) {
 		}
 		console.log('Mode détecté:', currentMode);
 	}
+
 	// fonction pour gérer les erreurs de géolocalisation
 	function onError(error) {
 		console.error('Erreur de géolocalisation :', error);
 	}
+
+	// Fonction pour mettre à jour l'interface utilisateur en fonction du mode
+	function updateUIForMode(mode) {
+		// Mettre à jour le style du bouton pour indiquer qu'il est actif
+		const buttons = document.querySelectorAll('.button-modes');
+		buttons.forEach((button) => {
+			if (button.dataset.mode === mode) {
+				button.classList.add('active');
+			} else {
+				button.classList.remove('active');
+			}
+		});
+	}
+
 	// fonction pour calculer la distance entre deux points géographiques
 	function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
 		const R = 6371; // Rayon de la Terre en km
@@ -345,24 +361,24 @@ function onPositionReceived(position) {
 	<!-- </div> -->
 	<div class="container__wrapper__buttons-modes">
 		<div class="wrapper__buttons-modes">
-			<button class="button-modes" on:click={() => updateMaxSpeedHistory(10)}
+			<button class="button-modes" data-mode="walk" on:click={() => updateMaxSpeedHistory(10)}
 				><img class="img-modes" src="/walk.png" alt="icone d'un marcheur" /></button
 			>
-			<button class="button-modes" on:click={() => updateMaxSpeedHistory(5)}
+			<button class="button-modes" data-mode="running" on:click={() => updateMaxSpeedHistory(5)}
 				><img class="img-modes" src="/running.png" alt="icone d'un coureur" /></button
 			>
-			<button class="button-modes" on:click={() => updateMaxSpeedHistory(3)}
+			<button class="button-modes" data-mode="bike" on:click={() => updateMaxSpeedHistory(3)}
 				><img class="img-modes" src="/bike.png" alt="icone d'une voiture" /></button
 			>
 		</div>
 		<div class="wrapper__buttons-modes-B">
-			<button class="button-modes" on:click={() => updateMaxSpeedHistory(7)}
+			<button class="button-modes" data-mode="car" on:click={() => updateMaxSpeedHistory(7)}
 				><img class="img-modes" src="/car.png" alt="icone d'un vélo" /></button
 			>
-			<button class="button-modes" on:click={() => updateMaxSpeedHistory(3)}
+			<button class="button-modes" data-mode="train" on:click={() => updateMaxSpeedHistory(3)}
 				><img class="img-modes" src="/train.png" alt="icone d'un train" /></button
 			>
-			<button class="button-modes" on:click={() => updateMaxSpeedHistory(1)}
+			<button class="button-modes" data-mode="plane" on:click={() => updateMaxSpeedHistory(1)}
 				><img class="img-modes" src="/plane.png" alt="icone d'un avion" /></button
 			>
 		</div>
@@ -429,7 +445,7 @@ function onPositionReceived(position) {
 		align-items: center;
 		justify-content: center;
 		flex-wrap: wrap;
-		gap: 5px;	
+		gap: 5px;
 		height: 100%;
 		width: 100%;
 	}
