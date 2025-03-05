@@ -193,60 +193,83 @@
 	let distanceSinceLastCheck = 0;
 	const MIN_DISTANCE_TO_TRACK = 0.005; // 5 mètres en kilomètres
 
-	// Fonction pour mettre à jour la position
-	function onPositionReceived(position) {
-		const { latitude, longitude } = position.coords;
-		const latlng = [latitude, longitude];
-		const currentTime = new Date().getTime();
-		positions.push(latlng);
+	let firstPositionReceived = false;
 
-		// Mettre à jour le marqueur et la ligne
-		if (marker) {
-			marker.setLatLng(latlng);
-		} else {
-			marker = L.marker(latlng).addTo(map);
-		}
+// Fonction pour mettre à jour la position
+function onPositionReceived(position) {
+    const { latitude, longitude, accuracy } = position.coords;
+    const latlng = [latitude, longitude];
+    const currentTime = new Date().getTime();
 
-		polyline.addLatLng(latlng);
+    // Ignorer les positions avec une précision trop faible
+    if (accuracy > 50) {
+        console.log('Précision trop faible, position ignorée');
+        return;
+    }
 
-		// Mettre à jour uniquement la position centrale sans changer le niveau de zoom
-		map.panTo(latlng);
+    // Ignorer la première position pour éviter les variations initiales
+    if (!firstPositionReceived) {
+        firstPositionReceived = true;
+        positions.push(latlng);
+        if (marker) {
+            marker.setLatLng(latlng);
+        } else {
+            marker = L.marker(latlng).addTo(map);
+        }
+        map.panTo(latlng);
+        return;
+    }
 
-		// Calculer la distance parcourue
-		if (positions.length > 1) {
-			const prevLatLng = positions[positions.length - 2];
-			const distance = getDistanceFromLatLonInKm(prevLatLng[0], prevLatLng[1], latitude, longitude);
-			distanceSinceLastCheck += distance;
+    positions.push(latlng);
 
-			// Mettre à jour la distance totale parcourue
-			if (distanceSinceLastCheck >= MIN_DISTANCE_TO_TRACK) {
-				totalDistance += distanceSinceLastCheck;
-				distanceDisplay = totalDistance.toFixed(3) + ' km';
+    // Mettre à jour le marqueur et la ligne
+    if (marker) {
+        marker.setLatLng(latlng);
+    } else {
+        marker = L.marker(latlng).addTo(map);
+    }
 
-				// Calculer la vitesse
-				if (lastPositionTime) {
-					const timeDiff = (currentTime - lastPositionTime) / 1000; // en secondes
-					const speed = (distanceSinceLastCheck / timeDiff) * 3600; // en km/h
-					speedHistory.push(speed);
+    polyline.addLatLng(latlng);
 
-					// Garder un historique de vitesse pour calculer la vitesse moyenne
-					if (speedHistory.length > maxSpeedHistory) {
-						speedHistory.shift();
-					}
-					// Calculer la vitesse moyenne
-					const avgSpeed =
-						speedHistory.reduce((sum, speed) => sum + speed, 0) / speedHistory.length;
-					speedDisplay = avgSpeed.toFixed(1) + ' km/h';
+    // Mettre à jour uniquement la position centrale sans changer le niveau de zoom
+    map.panTo(latlng);
 
-					// Mettre à jour le mode en fonction de la vitesse moyenne
-					updateMode(avgSpeed);
-				}
+    // Calculer la distance parcourue
+    if (positions.length > 1) {
+        const prevLatLng = positions[positions.length - 2];
+        const distance = getDistanceFromLatLonInKm(prevLatLng[0], prevLatLng[1], latitude, longitude);
+        distanceSinceLastCheck += distance;
 
-				lastPositionTime = currentTime;
-				distanceSinceLastCheck = 0;
-			}
-		}
-	}
+        // Mettre à jour la distance totale parcourue
+        if (distanceSinceLastCheck >= MIN_DISTANCE_TO_TRACK) {
+            totalDistance += distanceSinceLastCheck;
+            distanceDisplay = totalDistance.toFixed(3) + ' km';
+
+            // Calculer la vitesse
+            if (lastPositionTime) {
+                const timeDiff = (currentTime - lastPositionTime) / 1000; // en secondes
+                const speed = (distanceSinceLastCheck / timeDiff) * 3600; // en km/h
+                speedHistory.push(speed);
+
+                // Garder un historique de vitesse pour calculer la vitesse moyenne
+                if (speedHistory.length > maxSpeedHistory) {
+                    speedHistory.shift();
+                }
+                // Calculer la vitesse moyenne
+                const avgSpeed =
+                    speedHistory.reduce((sum, speed) => sum + speed, 0) / speedHistory.length;
+                speedDisplay = avgSpeed.toFixed(1) + ' km/h';
+
+                // Mettre à jour le mode en fonction de la vitesse moyenne
+                updateMode(avgSpeed);
+            }
+
+            lastPositionTime = currentTime;
+            distanceSinceLastCheck = 0;
+        }
+    }
+}
+
 	// fonction pour mettre à jour le mode de transport en fonction de la vitesse
 	function updateMode(speed) {
 		if (speed < MODE_THRESHOLDS.walk) {
