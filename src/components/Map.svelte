@@ -57,12 +57,13 @@
 		}
 	}
 
-	//fonction pour changer le mode de transport en fonction de la vitesse
 
-	function setMode(mode) {
-		currentMode = mode;
-		console.log('Mode sélectionné:', currentMode);
-	}
+
+// Fonction pour changer le mode de transport en fonction de la vitesse
+function setMode(mode) {
+    currentMode = mode;
+    console.log('Mode sélectionné:', currentMode);
+}
 
 	//fonction pour installer l'application
 	function installApp() {
@@ -139,18 +140,22 @@
 		}
 	});
 
-	// fonction pour démarrer le tracking
-	async function startTracking() {
-		if (typeof window !== 'undefined' && navigator.geolocation) {
-			isCalculating = true;
-			watchId = navigator.geolocation.watchPosition(onPositionReceived, onError, {
-				enableHighAccuracy: true,
-				maximumAge: 0
-			});
-		} else {
-			alert("La géolocalisation n'est pas supportée par votre navigateur.");
-		}
-	}
+	// Fonction pour démarrer le tracking
+async function startTracking() {
+    if (typeof window !== 'undefined' && navigator.geolocation) {
+        isCalculating = true;
+
+        // Activer le mode "marche" au démarrage
+        setMode('walk');
+
+        watchId = navigator.geolocation.watchPosition(onPositionReceived, onError, {
+            enableHighAccuracy: true,
+            maximumAge: 0
+        });
+    } else {
+        alert("La géolocalisation n'est pas supportée par votre navigateur.");
+    }
+}
 
 	// fonction pour mettre en pause le tracking
 	function togglePauseTracking() {
