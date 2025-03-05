@@ -19,7 +19,7 @@
 	let maxSpeedHistory = 5;
 	let deferredPrompt;
 	let installButton = false;
-	let currentMode = 'walk'; // Mode par défaut
+	let currentMode = ''; // Initialiser à une chaîne vide
 
 	// objet pour les seuils de vitesse pour chaque mode de transport
 	const MODE_THRESHOLDS = {
@@ -30,6 +30,14 @@
 		train: 200,
 		plane: 800
 	};
+
+	// Fonction pour gérer l'état de la classe active
+	function updateActiveClass() {
+		const buttons = document.querySelectorAll('.button-modes');
+		buttons.forEach(button => {
+			button.classList.toggle('active', button.classList.contains(currentMode) && isCalculating);
+		});
+	}
 
 	//fonction pour demander la permission de géolocalisation quuand elle n'est pas demandée par le navigateur
 	async function requestGeolocationPermission() {
@@ -57,13 +65,11 @@
 		}
 	}
 
-	// Fonction pour changer le mode de transport en fonction de la vitesse
+	//fonction pour changer le mode de transport en fonction de la vitesse
+
 	function setMode(mode) {
 		currentMode = mode;
 		console.log('Mode sélectionné:', currentMode);
-
-		// Mettre à jour l'interface utilisateur pour refléter le mode actif
-		updateUIForMode(mode);
 	}
 
 	//fonction pour installer l'application
@@ -141,18 +147,16 @@
 		}
 	});
 
-	// Fonction pour démarrer le tracking
+	// fonction pour démarrer le tracking
 	async function startTracking() {
 		if (typeof window !== 'undefined' && navigator.geolocation) {
+			currentMode = 'walk'; // Activer le mode "walk" par défaut au démarrage
 			isCalculating = true;
-
-			// Activer le mode "marche" au démarrage
-			setMode('walk');
-
 			watchId = navigator.geolocation.watchPosition(onPositionReceived, onError, {
 				enableHighAccuracy: true,
 				maximumAge: 0
 			});
+			updateActiveClass(); // Mettre à jour la classe active
 		} else {
 			alert("La géolocalisation n'est pas supportée par votre navigateur.");
 		}
@@ -169,6 +173,7 @@
 			startTracking();
 		}
 		isCalculating = !isCalculating;
+		updateActiveClass(); // Mettre à jour la classe active
 	}
 
 	// fonction pour réinitialiser le tracking
@@ -183,6 +188,8 @@
 		}
 		lastPositionTime = null;
 		speedHistory = [];
+		currentMode = ''; // Réinitialiser le mode
+		updateActiveClass(); // Mettre à jour la classe active
 	}
 
 	// fonction pour terminer le tracking
@@ -192,6 +199,8 @@
 			watchId = null;
 		}
 		isCalculating = false;
+		currentMode = ''; // Réinitialiser le mode
+		updateActiveClass(); // Mettre à jour la classe active
 		alert(`Distance totale parcourue : ${totalDistance.toFixed(3)} km`);
 	}
 
@@ -199,33 +208,11 @@
 	let distanceSinceLastCheck = 0;
 	const MIN_DISTANCE_TO_TRACK = 0.005; // 5 mètres en kilomètres
 
-	let firstPositionReceived = false;
-
 	// Fonction pour mettre à jour la position
 	function onPositionReceived(position) {
-		const { latitude, longitude, accuracy } = position.coords;
+		const { latitude, longitude } = position.coords;
 		const latlng = [latitude, longitude];
 		const currentTime = new Date().getTime();
-
-		// Ignorer les positions avec une précision trop faible
-		if (accuracy > 50) {
-			console.log('Précision trop faible, position ignorée');
-			return;
-		}
-
-		// Ignorer la première position pour éviter les variations initiales
-		if (!firstPositionReceived) {
-			firstPositionReceived = true;
-			positions.push(latlng);
-			if (marker) {
-				marker.setLatLng(latlng);
-			} else {
-				marker = L.marker(latlng).addTo(map);
-			}
-			map.panTo(latlng);
-			return;
-		}
-
 		positions.push(latlng);
 
 		// Mettre à jour le marqueur et la ligne
@@ -275,7 +262,6 @@
 			}
 		}
 	}
-
 	// fonction pour mettre à jour le mode de transport en fonction de la vitesse
 	function updateMode(speed) {
 		if (speed < MODE_THRESHOLDS.walk) {
@@ -292,26 +278,12 @@
 			currentMode = 'plane';
 		}
 		console.log('Mode détecté:', currentMode);
+		updateActiveClass(); // Mettre à jour la classe active
 	}
-
 	// fonction pour gérer les erreurs de géolocalisation
 	function onError(error) {
 		console.error('Erreur de géolocalisation :', error);
 	}
-
-	// Fonction pour mettre à jour l'interface utilisateur en fonction du mode
-	function updateUIForMode(mode) {
-		// Mettre à jour le style du bouton pour indiquer qu'il est actif
-		const buttons = document.querySelectorAll('.button-modes');
-		buttons.forEach((button) => {
-			if (button.dataset.mode === mode) {
-				button.classList.add('active');
-			} else {
-				button.classList.remove('active');
-			}
-		});
-	}
-
 	// fonction pour calculer la distance entre deux points géographiques
 	function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
 		const R = 6371; // Rayon de la Terre en km
@@ -361,24 +333,24 @@
 	<!-- </div> -->
 	<div class="container__wrapper__buttons-modes">
 		<div class="wrapper__buttons-modes">
-			<button class="button-modes" data-mode="walk" on:click={() => updateMaxSpeedHistory(10)}
+			<button  class="button-modes {currentMode === 'walk' ? 'active' : ''}"  on:click={() => updateMaxSpeedHistory(10)}
 				><img class="img-modes" src="/walk.png" alt="icone d'un marcheur" /></button
 			>
-			<button class="button-modes" data-mode="running" on:click={() => updateMaxSpeedHistory(5)}
+			<button class="button-modes"  on:click={() => updateMaxSpeedHistory(5)}
 				><img class="img-modes" src="/running.png" alt="icone d'un coureur" /></button
 			>
-			<button class="button-modes" data-mode="bike" on:click={() => updateMaxSpeedHistory(3)}
+			<button class="button-modes" on:click={() => updateMaxSpeedHistory(3)}
 				><img class="img-modes" src="/bike.png" alt="icone d'une voiture" /></button
 			>
 		</div>
 		<div class="wrapper__buttons-modes-B">
-			<button class="button-modes" data-mode="car" on:click={() => updateMaxSpeedHistory(7)}
+			<button class="button-modes" on:click={() => updateMaxSpeedHistory(7)}
 				><img class="img-modes" src="/car.png" alt="icone d'un vélo" /></button
 			>
-			<button class="button-modes" data-mode="train" on:click={() => updateMaxSpeedHistory(3)}
+			<button class="button-modes"  on:click={() => updateMaxSpeedHistory(3)}
 				><img class="img-modes" src="/train.png" alt="icone d'un train" /></button
 			>
-			<button class="button-modes" data-mode="plane" on:click={() => updateMaxSpeedHistory(1)}
+			<button class="button-modes"  on:click={() => updateMaxSpeedHistory(1)}
 				><img class="img-modes" src="/plane.png" alt="icone d'un avion" /></button
 			>
 		</div>
@@ -458,6 +430,9 @@
 		height: 50px;
 		border-radius: 50%;
 		box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.36);
+	}
+.active {
+		background-color: #8796e1;
 	}
 	.button-modes:active {
 		background-color: #8796e1;
