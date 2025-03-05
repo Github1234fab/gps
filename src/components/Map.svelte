@@ -368,7 +368,7 @@ function onPositionReceived(position) {
 			>{isCalculating ? 'Continue' : 'Pause'}</button
 		>
 		<button class="buttons" on:click={resetTracking}>Reset</button>
-		<button class="buttons" on:click={finishTracking} disabled={!positions.length}>Finish</button>
+		<button class="buttons" on:click={finishTracking} disabled={!positions.length}>Stop</button>
 	</div>
 </main>
 
