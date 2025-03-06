@@ -211,63 +211,70 @@
 
 	// Variables pour le calcul de la distance et de la vitesse
 	let distanceSinceLastCheck = 0;
-	const MIN_DISTANCE_TO_TRACK = 0.010; // 5 mètres en kilomètres
+	const MIN_DISTANCE_TO_TRACK = 0.005; // 5 mètres en kilomètres
 
 	// Fonction pour mettre à jour la position
 	function onPositionReceived(position) {
-		const { latitude, longitude } = position.coords;
-		const latlng = [latitude, longitude];
-		const currentTime = new Date().getTime();
-		positions.push(latlng);
+    const { latitude, longitude, accuracy } = position.coords;
+    const latlng = [latitude, longitude];
+    const currentTime = new Date().getTime();
+    positions.push(latlng);
 
-		// Mettre à jour le marqueur et la ligne
-		if (marker) {
-			marker.setLatLng(latlng);
-		} else {
-			marker = L.marker(latlng).addTo(map);
-		}
+    // Mettre à jour le marqueur et la ligne
+    if (marker) {
+        marker.setLatLng(latlng);
+    } else {
+        marker = L.marker(latlng).addTo(map);
+    }
 
-		polyline.addLatLng(latlng);
+    polyline.addLatLng(latlng);
 
-		// Mettre à jour uniquement la position centrale sans changer le niveau de zoom
-		map.panTo(latlng);
+    // Mettre à jour uniquement la position centrale sans changer le niveau de zoom
+    map.panTo(latlng);
 
-		// Calculer la distance parcourue
-		if (positions.length > 1) {
-			const prevLatLng = positions[positions.length - 2];
-			const distance = getDistanceFromLatLonInKm(prevLatLng[0], prevLatLng[1], latitude, longitude);
-			distanceSinceLastCheck += distance;
+    // Calculer la distance parcourue
+    if (positions.length > 1) {
+        const prevLatLng = positions[positions.length - 2];
+        const distance = getDistanceFromLatLonInKm(prevLatLng[0], prevLatLng[1], latitude, longitude);
 
-			// Mettre à jour la distance totale parcourue
-			if (distanceSinceLastCheck >= MIN_DISTANCE_TO_TRACK) {
-				totalDistance += distanceSinceLastCheck;
-				distanceDisplay = totalDistance.toFixed(3) + ' km';
+        // Ignorer les petits déplacements
+        if (distance >= MIN_DISTANCE_TO_TRACK) {
+            distanceSinceLastCheck += distance;
 
-				// Calculer la vitesse
-				if (lastPositionTime) {
-					const timeDiff = (currentTime - lastPositionTime) / 1000; // en secondes
-					const speed = (distanceSinceLastCheck / timeDiff) * 3600; // en km/h
-					speedHistory.push(speed);
+            // Mettre à jour la distance totale parcourue
+            if (distanceSinceLastCheck >= MIN_DISTANCE_TO_TRACK) {
+                totalDistance += distanceSinceLastCheck;
+                distanceDisplay = totalDistance.toFixed(3) + ' km';
 
-					// Garder un historique de vitesse pour calculer la vitesse moyenne
-					if (speedHistory.length > maxSpeedHistory) {
-						speedHistory.shift();
-					}
-					// Calculer la vitesse moyenne
-					const avgSpeed =
-						speedHistory.reduce((sum, speed) => sum + speed, 0) / speedHistory.length;
-					speedDisplay = avgSpeed.toFixed(1) + ' km/h';
+                // Calculer la vitesse
+                if (lastPositionTime) {
+                    const timeDiff = (currentTime - lastPositionTime) / 1000; // en secondes
+                    const speed = (distanceSinceLastCheck / timeDiff) * 3600; // en km/h
+                    speedHistory.push(speed);
 
-					// Mettre à jour le mode en fonction de la vitesse moyenne
-					updateMode(avgSpeed);
-				}
+                    // Garder un historique de vitesse pour calculer la vitesse moyenne
+                    if (speedHistory.length > maxSpeedHistory) {
+                        speedHistory.shift();
+                    }
+                    // Calculer la vitesse moyenne
+                    const avgSpeed =
+                        speedHistory.reduce((sum, speed) => sum + speed, 0) / speedHistory.length;
+                    speedDisplay = avgSpeed.toFixed(1) + ' km/h';
 
-				lastPositionTime = currentTime;
-				distanceSinceLastCheck = 0;
-			}
-		}
-	}
-	// fonction pour mettre à jour le mode de transport en fonction de la vitesse
+                    // Mettre à jour le mode en fonction de la vitesse moyenne
+                    updateMode(avgSpeed);
+                }
+
+                lastPositionTime = currentTime;
+                distanceSinceLastCheck = 0;
+            }
+        }
+    }
+}	
+
+
+
+// fonction pour mettre à jour le mode de transport en fonction de la vitesse
 	function updateMode(speed) {
 		if (speed < MODE_THRESHOLDS.walk) {
 			currentMode = 'walk';
