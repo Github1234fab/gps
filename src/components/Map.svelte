@@ -19,7 +19,7 @@
 	let maxSpeedHistory = 5;
 	let deferredPrompt;
 	let installButton = false;
-	let currentMode = ''; // Initialiser à une chaîne vide
+	let currentMode = 'walk'; // Mode par défaut
 
 	// objet pour les seuils de vitesse pour chaque mode de transport
 	const MODE_THRESHOLDS = {
@@ -31,22 +31,12 @@
 		plane: 800
 	};
 
-	// Fonction pour gérer l'état de la classe active
-	function updateActiveClass() {
-		const buttons = document.querySelectorAll('.button-modes');
-		buttons.forEach(button => {
-			button.classList.toggle('active', button.classList.contains(currentMode) && isCalculating);
-		});
-	}
-
 	//fonction pour demander la permission de géolocalisation quuand elle n'est pas demandée par le navigateur
 	async function requestGeolocationPermission() {
 		if ('permissions' in navigator) {
 			const permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
 			if (permissionStatus.state === 'denied') {
-				alert(
-					"La géolocalisation est désactivée. Veuillez l'activer dans les paramètres de votre navigateur."
-				);
+				alert("La géolocalisation est désactivée. Veuillez l'activer dans les paramètres de votre navigateur.");
 			} else if (permissionStatus.state === 'prompt') {
 				navigator.geolocation.getCurrentPosition((position) => {
 					const { latitude, longitude } = position.coords;
@@ -95,9 +85,7 @@
 			}
 
 			if (isIOS()) {
-				alert(
-					"Pour installer votre application sur votre appareil iOS: \n 1. Appuyez sur le bouton 'Partager' au bas de votre écran (carré avec une flèche vers le haut). \n 2. Sélectionnez ensuite 'Ajouter à l'écran d'accueil'. \n 3. Retrouvez votre application sur votre page d'accueil et commencez à l'utiliser 😉!"
-				);
+				alert("Pour installer votre application sur votre appareil iOS: \n 1. Appuyez sur le bouton 'Partager' au bas de votre écran (carré avec une flèche vers le haut). \n 2. Sélectionnez ensuite 'Ajouter à l'écran d'accueil'. \n 3. Retrouvez votre application sur votre page d'accueil et commencez à l'utiliser 😉!");
 			}
 
 			// événement pour écouter l'événement beforeinstallprompt. Si il est déclenché, on empêche le comportement par défaut et on stocke l'événement dans une variable deferredPrompt
@@ -110,9 +98,7 @@
 			// ecooute de l'événement appinstalled pour afficher un message de confirmation
 			window.addEventListener('appinstalled', (evt) => {
 				installButton = false;
-				alert(
-					"L'application a été installée avec succès 👍 !  Vous pouvez désormais l'utiliser en tant qu'application et bénéficier de tout ces atouts. Retrouvez l'application sur votre écran d'accueil, elle vous attends 😉 ."
-				);
+				alert("L'application a été installée avec succès 👍 !  Vous pouvez désormais l'utiliser en tant qu'application et bénéficier de tout ces atouts. Retrouvez l'application sur votre écran d'accueil, elle vous attends 😉 .");
 			});
 
 			// chargement de la carte et des dépendances
@@ -149,23 +135,16 @@
 
 	// fonction pour démarrer le tracking
 	async function startTracking() {
-	if (typeof window !== 'undefined' && navigator.geolocation) {
-		if (!marker) {
-			alert("La géolocalisation n'a pas encore été activée. Veuillez activer la localisation avant de commencer le tracking.");
-			return;
+		if (typeof window !== 'undefined' && navigator.geolocation) {
+			isCalculating = true;
+			watchId = navigator.geolocation.watchPosition(onPositionReceived, onError, {
+				enableHighAccuracy: true,
+				maximumAge: 0
+			});
+		} else {
+			alert("La géolocalisation n'est pas supportée par votre navigateur.");
 		}
-		
-		currentMode = 'walk'; // Activer le mode "walk" par défaut au démarrage
-		isCalculating = true;
-		watchId = navigator.geolocation.watchPosition(onPositionReceived, onError, {
-			enableHighAccuracy: true,
-			maximumAge: 0
-		});
-		updateActiveClass(); // Mettre à jour la classe active
-	} else {
-		alert("La géolocalisation n'est pas supportée par votre navigateur.");
 	}
-}
 
 	// fonction pour mettre en pause le tracking
 	function togglePauseTracking() {
@@ -178,7 +157,6 @@
 			startTracking();
 		}
 		isCalculating = !isCalculating;
-		updateActiveClass(); // Mettre à jour la classe active
 	}
 
 	// fonction pour réinitialiser le tracking
@@ -193,8 +171,6 @@
 		}
 		lastPositionTime = null;
 		speedHistory = [];
-		currentMode = ''; // Réinitialiser le mode
-		updateActiveClass(); // Mettre à jour la classe active
 	}
 
 	// fonction pour terminer le tracking
@@ -204,8 +180,6 @@
 			watchId = null;
 		}
 		isCalculating = false;
-		currentMode = ''; // Réinitialiser le mode
-		updateActiveClass(); // Mettre à jour la classe active
 		alert(`Distance totale parcourue : ${totalDistance.toFixed(3)} km`);
 	}
 
@@ -215,66 +189,58 @@
 
 	// Fonction pour mettre à jour la position
 	function onPositionReceived(position) {
-    const { latitude, longitude, accuracy } = position.coords;
-    const latlng = [latitude, longitude];
-    const currentTime = new Date().getTime();
-    positions.push(latlng);
+		const { latitude, longitude } = position.coords;
+		const latlng = [latitude, longitude];
+		const currentTime = new Date().getTime();
+		positions.push(latlng);
 
-    // Mettre à jour le marqueur et la ligne
-    if (marker) {
-        marker.setLatLng(latlng);
-    } else {
-        marker = L.marker(latlng).addTo(map);
-    }
+		// Mettre à jour le marqueur et la ligne
+		if (marker) {
+			marker.setLatLng(latlng);
+		} else {
+			marker = L.marker(latlng).addTo(map);
+		}
 
-    polyline.addLatLng(latlng);
+		polyline.addLatLng(latlng);
 
-    // Mettre à jour uniquement la position centrale sans changer le niveau de zoom
-    map.panTo(latlng);
+		// Mettre à jour uniquement la position centrale sans changer le niveau de zoom
+		map.panTo(latlng);
 
-    // Calculer la distance parcourue
-    if (positions.length > 1) {
-        const prevLatLng = positions[positions.length - 2];
-        const distance = getDistanceFromLatLonInKm(prevLatLng[0], prevLatLng[1], latitude, longitude);
+		// Calculer la distance parcourue
+		if (positions.length > 1) {
+			const prevLatLng = positions[positions.length - 2];
+			const distance = getDistanceFromLatLonInKm(prevLatLng[0], prevLatLng[1], latitude, longitude);
+			distanceSinceLastCheck += distance;
 
-        // Ignorer les petits déplacements
-        if (distance >= MIN_DISTANCE_TO_TRACK) {
-            distanceSinceLastCheck += distance;
+			// Mettre à jour la distance totale parcourue
+			if (distanceSinceLastCheck >= MIN_DISTANCE_TO_TRACK) {
+				totalDistance += distanceSinceLastCheck;
+				distanceDisplay = totalDistance.toFixed(3) + ' km';
 
-            // Mettre à jour la distance totale parcourue
-            if (distanceSinceLastCheck >= MIN_DISTANCE_TO_TRACK) {
-                totalDistance += distanceSinceLastCheck;
-                distanceDisplay = totalDistance.toFixed(3) + ' km';
+				// Calculer la vitesse
+				if (lastPositionTime) {
+					const timeDiff = (currentTime - lastPositionTime) / 1000; // en secondes
+					const speed = (distanceSinceLastCheck / timeDiff) * 3600; // en km/h
+					speedHistory.push(speed);
 
-                // Calculer la vitesse
-                if (lastPositionTime) {
-                    const timeDiff = (currentTime - lastPositionTime) / 1000; // en secondes
-                    const speed = (distanceSinceLastCheck / timeDiff) * 3600; // en km/h
-                    speedHistory.push(speed);
+					// Garder un historique de vitesse pour calculer la vitesse moyenne
+					if (speedHistory.length > maxSpeedHistory) {
+						speedHistory.shift();
+					}
+					// Calculer la vitesse moyenne
+					const avgSpeed = speedHistory.reduce((sum, speed) => sum + speed, 0) / speedHistory.length;
+					speedDisplay = avgSpeed.toFixed(1) + ' km/h';
 
-                    // Garder un historique de vitesse pour calculer la vitesse moyenne
-                    if (speedHistory.length > maxSpeedHistory) {
-                        speedHistory.shift();
-                    }
-                    // Calculer la vitesse moyenne
-                    const avgSpeed =
-                        speedHistory.reduce((sum, speed) => sum + speed, 0) / speedHistory.length;
-                    speedDisplay = avgSpeed.toFixed(1) + ' km/h';
+					// Mettre à jour le mode en fonction de la vitesse moyenne
+					updateMode(avgSpeed);
+				}
 
-                    // Mettre à jour le mode en fonction de la vitesse moyenne
-                    updateMode(avgSpeed);
-                }
-
-                lastPositionTime = currentTime;
-                distanceSinceLastCheck = 0;
-            }
-        }
-    }
-}	
-
-
-
-// fonction pour mettre à jour le mode de transport en fonction de la vitesse
+				lastPositionTime = currentTime;
+				distanceSinceLastCheck = 0;
+			}
+		}
+	}
+	// fonction pour mettre à jour le mode de transport en fonction de la vitesse
 	function updateMode(speed) {
 		if (speed < MODE_THRESHOLDS.walk) {
 			currentMode = 'walk';
@@ -290,7 +256,6 @@
 			currentMode = 'plane';
 		}
 		console.log('Mode détecté:', currentMode);
-		updateActiveClass(); // Mettre à jour la classe active
 	}
 	// fonction pour gérer les erreurs de géolocalisation
 	function onError(error) {
@@ -301,9 +266,7 @@
 		const R = 6371; // Rayon de la Terre en km
 		const dLat = deg2rad(lat2 - lat1);
 		const dLon = deg2rad(lon2 - lon1);
-		const a =
-			Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-			Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+		const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
 		const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 		return R * c; // Distance en km
 	}
@@ -345,33 +308,20 @@
 	<!-- </div> -->
 	<div class="container__wrapper__buttons-modes">
 		<div class="wrapper__buttons-modes">
-			<button  class="button-modes {currentMode === 'walk' ? 'active' : ''}"  on:click={() => updateMaxSpeedHistory(10)}
-				><img class="img-modes" src="/walk.png" alt="icone d'un marcheur" /></button
-			>
-			<button class="button-modes"  on:click={() => updateMaxSpeedHistory(5)}
-				><img class="img-modes" src="/running.png" alt="icone d'un coureur" /></button
-			>
-			<button class="button-modes" on:click={() => updateMaxSpeedHistory(3)}
-				><img class="img-modes" src="/bike.png" alt="icone d'une voiture" /></button
-			>
+			<button class="button-modes" on:click={() => updateMaxSpeedHistory(5)}><img class="img-modes" src="/walk.png" alt="icone d'un marcheur" /></button>
+			<button class="button-modes" on:click={() => updateMaxSpeedHistory(15)}><img class="img-modes" src="/running.png" alt="icone d'un coureur" /></button>
+			<button class="button-modes" on:click={() => updateMaxSpeedHistory(25)}><img class="img-modes" src="/bike.png" alt="icone d'un vélo" /></button>
 		</div>
 		<div class="wrapper__buttons-modes-B">
-			<button class="button-modes" on:click={() => updateMaxSpeedHistory(7)}
-				><img class="img-modes" src="/car.png" alt="icone d'un vélo" /></button
-			>
-			<button class="button-modes"  on:click={() => updateMaxSpeedHistory(3)}
-				><img class="img-modes" src="/train.png" alt="icone d'un train" /></button
-			>
-			<button class="button-modes"  on:click={() => updateMaxSpeedHistory(1)}
-				><img class="img-modes" src="/plane.png" alt="icone d'un avion" /></button
-			>
+			<button class="button-modes" on:click={() => updateMaxSpeedHistory(70)}><img class="img-modes" src="/car.png" alt="icone d'une voiture" /></button>
+			<button class="button-modes" on:click={() => updateMaxSpeedHistory(200)}><img class="img-modes" src="/train.png" alt="icone d'un train" /></button>
+			<button class="button-modes" on:click={() => updateMaxSpeedHistory(800)}><img class="img-modes" src="/plane.png" alt="icone d'un avion" /></button>
 		</div>
 	</div>
 	<div class="wrapper__buttons">
 		<button class="buttons" on:click={startTracking} disabled={isCalculating}>Start</button>
-		<button class="buttons" on:click={togglePauseTracking}
-			>{isCalculating ? 'Continue' : 'Pause'}</button
-		>
+		<button class="buttons" on:click={togglePauseTracking}>{isCalculating ? 'Continue' : 'Pause'}</button>
+
 		<button class="buttons" on:click={resetTracking}>Reset</button>
 		<button class="buttons" on:click={finishTracking} disabled={!positions.length}>Stop</button>
 	</div>
@@ -379,7 +329,7 @@
 
 <style>
 	#map {
-		width: 100%;
+		width: 100vw;
 		height: 100vh;
 		margin-bottom: 10px;
 		z-index: 0;
@@ -443,9 +393,7 @@
 		border-radius: 50%;
 		box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.36);
 	}
-.active {
-		background-color: #8796e1;
-	}
+
 	.button-modes:active {
 		background-color: #8796e1;
 	}
@@ -495,6 +443,9 @@
 	.buttons:active {
 		border: 2px solid white;
 	}
+	/* .active {
+		background-color: #e58d11;
+	} */
 	.indicator {
 		text-align: center;
 		border-radius: 15px;
