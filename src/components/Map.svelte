@@ -36,7 +36,7 @@
 		if ('permissions' in navigator) {
 			const permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
 			if (permissionStatus.state === 'denied') {
-				alert("La géolocalisation est désactivée. Veuillez l'activer dans les paramètres de votre navigateur.");
+				alert("La géolocalisation est peut-être désactivée. Sinon, attendez quelques secondes l'activation du GPS.");
 			} else if (permissionStatus.state === 'prompt') {
 				navigator.geolocation.getCurrentPosition((position) => {
 					const { latitude, longitude } = position.coords;
@@ -85,7 +85,7 @@
 			}
 
 			if (isIOS()) {
-				alert("Pour installer votre application sur votre appareil iOS: \n 1. Appuyez sur le bouton 'Partager' au bas de votre écran (carré avec une flèche vers le haut). \n 2. Sélectionnez ensuite 'Ajouter à l'écran d'accueil'. \n 3. Retrouvez votre application sur votre page d'accueil et commencez à l'utiliser 😉!");
+				alert("Installation: \n 1. Cliquez sur le carré avec une flèche vers le haut, au bas de votre écran . \n 2. Sélectionnez 'Ajouter à l'écran d'accueil'. \n 3. Retrouvez votre application sur votre page d'accueil 😉!");
 			}
 
 			// événement pour écouter l'événement beforeinstallprompt. Si il est déclenché, on empêche le comportement par défaut et on stocke l'événement dans une variable deferredPrompt
@@ -166,9 +166,6 @@
 		distanceDisplay = '0.000 km';
 		speedDisplay = '0.0 km/h';
 		polyline.setLatLngs([]);
-		if (marker) {
-			marker.setLatLng([0, 0]);
-		}
 		lastPositionTime = null;
 		speedHistory = [];
 	}
