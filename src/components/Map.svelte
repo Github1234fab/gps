@@ -24,7 +24,7 @@
 	// objet pour les seuils de vitesse pour chaque mode de transport
 	const MODE_THRESHOLDS = {
 		walk: 5,
-		running: 12,
+		running: 15,
 		bike: 25,
 		car: 120,
 		train: 200,
